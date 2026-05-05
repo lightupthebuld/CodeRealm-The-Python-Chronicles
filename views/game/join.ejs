@@ -1,0 +1,82 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-back">← Back</a>
+            <h1>🚪 Join Room</h1>
+        </div>
+
+        <div class="join-room-card animate-slide-up">
+            <div class="form-group">
+                <label for="room-code" class="form-label">Room Code</label>
+                <div class="join-input-row">
+                    <input type="text" class="form-control" id="room-code" name="roomcode" placeholder="Enter room code" maxlength="6" style="text-transform: uppercase; letter-spacing: 0.2em; font-size: 1.2rem; text-align: center;">
+                    <button class="btn btn-primary" id="btn-join" onclick="joinRoom()">Join</button>
+                </div>
+            </div>
+
+            <div class="camera-area" id="camera-area" style="position: relative; min-height: 250px; display: flex; justify-content: center; align-items: center; background-color: var(--bg-surface); border: 4px dashed var(--primary-color); border-radius: var(--radius-md); box-shadow: 0 0 15px rgba(26, 115, 232, 0.3);">
+                <div id="camera-overlay" style="position: absolute; text-align: center; color: var(--primary-color);">
+                    <span style="font-size: 3rem;">📷</span>
+                    <p style="margin-top: 10px; font-weight: bold;">Camera Off</p>
+                </div>
+                <div id="reader" style="width: 100%; z-index: 2;"></div>
+            </div>
+
+            <div style="text-align: right; margin-top: var(--space-md);">
+                <button class="btn btn-secondary" id="btn-open-camera">📸 Open Camera</button>
+                <button class="btn btn-outline" id="btn-stop-camera" style="display: none;">🛑 Stop Camera</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<script>
+    function joinRoom() {
+        const code = document.getElementById('room-code').value.toUpperCase();
+        if (code) {
+            window.location.href = '/game/lobby/' + code;
+        }
+    }
+
+    let html5QrCode;
+    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+    
+    document.getElementById('btn-open-camera').addEventListener('click', () => {
+        document.getElementById('btn-open-camera').style.display = 'none';
+        document.getElementById('btn-stop-camera').style.display = 'inline-block';
+        document.getElementById('camera-overlay').style.display = 'none';
+        
+        html5QrCode = new Html5Qrcode("reader");
+        html5QrCode.start(
+            { facingMode: "environment" },
+            config,
+            (decodedText, decodedResult) => {
+                // On Success
+                document.getElementById('room-code').value = decodedText;
+                html5QrCode.stop().then(() => {
+                    joinRoom();
+                });
+            },
+            (errorMessage) => { }
+        ).catch((err) => {
+            console.error("Error starting camera", err);
+            alert("Failed to access camera. Please check your browser permissions.");
+        });
+    });
+
+    document.getElementById('btn-stop-camera').addEventListener('click', () => {
+        if(html5QrCode) {
+            html5QrCode.stop().then(() => {
+                document.getElementById('btn-open-camera').style.display = 'inline-block';
+                document.getElementById('btn-stop-camera').style.display = 'none';
+                document.getElementById('camera-overlay').style.display = 'block';
+            });
+        }
+    });
+</script>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

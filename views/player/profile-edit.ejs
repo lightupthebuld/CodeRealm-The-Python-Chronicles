@@ -1,0 +1,45 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/profile" class="btn-back" id="btn-back">← Back</a>
+            <h1>✏️ Edit Profile</h1>
+        </div>
+
+        <div class="profile-card animate-slide-up" style="text-align: left;">
+            <div class="profile-avatar" style="margin-bottom: var(--space-xl);">
+                👤
+            </div>
+
+            <form id="edit-profile-form" action="/profile/edit" method="POST" novalidate>
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" value="<%= user ? user.username : '' %>" placeholder="Username">
+                </div>
+
+                <div class="form-group">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" value="<%= user ? user.email : '' %>" placeholder="Email">
+                </div>
+
+                <div class="form-group">
+                    <label for="currentPassword" class="form-label">Current Password</label>
+                    <input type="password" class="form-control" id="currentPassword" name="currentPassword" placeholder="Required if changing password">
+                </div>
+
+                <div class="form-group">
+                    <label for="newPassword" class="form-label">New Password</label>
+                    <input type="password" class="form-control" id="newPassword" name="newPassword" placeholder="Leave blank to keep current">
+                </div>
+
+                <div style="text-align: right; margin-top: var(--space-xl);">
+                    <button type="submit" class="btn btn-primary btn-lg" id="btn-update">💾 Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

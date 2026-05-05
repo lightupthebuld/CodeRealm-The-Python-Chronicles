@@ -1,0 +1,17 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-back">← Back</a>
+            <h1>📜 Rules</h1>
+        </div>
+
+        <div class="rules-content animate-slide-up" style="white-space: pre-wrap; background: var(--bg-surface); padding: var(--space-xl); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
+            <%= rulesContent %>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

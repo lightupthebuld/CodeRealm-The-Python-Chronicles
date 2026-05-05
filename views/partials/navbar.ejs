@@ -1,0 +1,50 @@
+<nav class="navbar" id="main-navbar">
+    <div class="navbar-inner">
+        <a href="/" class="navbar-brand" id="navbar-brand" style="font-size: 1.2rem;">
+            🎮 <span>CodeRealm: The Python Chronicles</span>
+        </a>
+
+        <button class="navbar-toggle" id="navbar-toggle" aria-label="Toggle navigation">
+            ☰
+        </button>
+
+        <ul class="navbar-nav" id="navbar-nav">
+            <% if (user) { %>
+                <% if (user.role === 'admin') { %>
+                    <li><a href="/admin/dashboard" id="nav-dashboard">Dashboard</a></li>
+                    <li><a href="/admin/users" id="nav-users">Users</a></li>
+                    <li><a href="/admin/questions" id="nav-questions">Questions</a></li>
+                    <li><a href="/admin/rules" id="nav-rules">Rules</a></li>
+                    <li><a href="/admin/profile" id="nav-profile">Profile</a></li>
+                <% } else { %>
+                    <li><a href="/" id="nav-home">Home</a></li>
+                    <li><a href="/game/create" id="nav-create">Create Room</a></li>
+                    <li><a href="/game/join" id="nav-join">Join Room</a></li>
+                    <li><a href="/leaderboard" id="nav-leaderboard">Leaderboard</a></li>
+                    <li><a href="/download" id="nav-download">Download</a></li>
+                    <li><a href="/rules" id="nav-rules">Rules</a></li>
+                    <li><a href="/profile" id="nav-profile">Profile</a></li>
+                <% } %>
+                <li>
+                    <form action="/auth/logout" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-outline btn-sm" id="btn-logout">Logout</button>
+                    </form>
+                </li>
+            <% } else { %>
+                <li><a href="/" id="nav-home">Home</a></li>
+                <li><a href="/leaderboard" id="nav-leaderboard">Leaderboard</a></li>
+                <li><a href="/download" id="nav-download">Download</a></li>
+                <li><a href="/rules" id="nav-rules">Rules</a></li>
+                <li><a href="/auth/login" class="btn btn-primary btn-sm" id="nav-login">Login</a></li>
+                <li><a href="/auth/register" class="btn btn-outline btn-sm" id="nav-register">Register</a></li>
+            <% } %>
+        </ul>
+    </div>
+</nav>
+
+<script>
+    // Mobile nav toggle
+    document.getElementById('navbar-toggle').addEventListener('click', function () {
+        document.getElementById('navbar-nav').classList.toggle('active');
+    });
+</script>

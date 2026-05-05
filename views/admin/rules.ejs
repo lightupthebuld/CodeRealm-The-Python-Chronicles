@@ -1,0 +1,26 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/dashboard" class="btn-back" id="btn-back">← Back</a>
+                    <h1>📜 Admin – Rules Management</h1>
+                </div>
+
+                <div class="form-card animate-slide-up">
+                    <form action="/admin/rules" method="POST">
+                        <div class="form-group">
+                            <label for="rules-content" class="form-label">Game Rules</label>
+                            <textarea class="form-control" id="rules-content" name="rules_content" rows="15"
+                                placeholder="Enter the game rules here..."><%= rulesContent %></textarea>
+                        </div>
+                        <div style="text-align: right;">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btn-save-rules">💾 Save Rules</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

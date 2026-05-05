@@ -1,0 +1,28 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container" style="padding-top: var(--space-2xl);">
+        <div class="page-header" style="justify-content: center; border: none;">
+            <h1>📊 Answer Result</h1>
+        </div>
+
+        <div class="result-card animate-slide-up">
+            <div class="result-icon">✅</div>
+            <h2 style="color: var(--success-light);">Correct!</h2>
+            <p>Great job, Code Walker! You answered correctly.</p>
+            <div style="margin-top: var(--space-xl); padding: var(--space-lg); background: var(--bg-secondary); border-radius: var(--radius-md); width: 100%; max-width: 400px;">
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: var(--space-sm);">🎲 Dice Roll: <span style="color: var(--accent-light); font-weight: 700;">42</span></p>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: var(--space-sm);">📊 Result: <span style="color: var(--success-light); font-weight: 700;">Hard Success</span></p>
+                <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: var(--space-sm);">⭐ Score: <span style="color: var(--accent-light); font-weight: 700;">+15</span></p>
+                <p style="font-size: 0.9rem; color: var(--text-muted);">🛡️ Skill Bonus: <span style="color: var(--secondary-light); font-weight: 700;">+2</span></p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-top: var(--space-xl);">
+            <a href="/game/play/<%= roomCode %>" class="btn btn-primary btn-lg" id="btn-back-game">← Back</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

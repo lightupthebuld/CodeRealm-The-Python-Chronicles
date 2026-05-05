@@ -1,0 +1,81 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container" style="padding-top: var(--space-2xl);">
+        
+        <% if (typeof success !== 'undefined' && success) { %>
+            <div class="alert alert-success" style="max-width: 700px; margin: 0 auto var(--space-xl);">
+                ✓ <%= success %>
+            </div>
+        <% } %>
+
+        <% if (user) { %>
+            <!-- Slide 10: Logged-in User Main Page -->
+            <div class="page-header" style="flex-direction: column; align-items: center; justify-content: center; border: none; gap: var(--space-sm);">
+                <h1>🎮 User – Main Page</h1>
+                <p style="color: var(--text-secondary); font-size: 1.1rem;">Welcome, <strong style="color: var(--primary-light);"><%= user.username %></strong>!</p>
+            </div>
+
+            <div class="player-grid animate-slide-up">
+                <a href="/game/create" class="player-btn" id="btn-create-room">
+                    <span class="icon">🏰</span> Create Room
+                </a>
+                <a href="/game/join" class="player-btn" id="btn-join-room">
+                    <span class="icon">🚪</span> Join Room
+                </a>
+                <a href="/leaderboard" class="player-btn" id="btn-leaderboard">
+                    <span class="icon">🏆</span> Leaderboard
+                </a>
+                <a href="/download" class="player-btn" id="btn-download">
+                    <span class="icon">📦</span> Physical Component Download
+                </a>
+                <a href="/rules" class="player-btn" id="btn-rules">
+                    <span class="icon">📜</span> Rules
+                </a>
+                <a href="/profile" class="player-btn" id="btn-profile">
+                    <span class="icon">👤</span> Profile
+                </a>
+                <div class="full-width">
+                    <form action="/auth/logout" method="POST">
+                        <button type="submit" class="player-btn" style="width: 100%; border: none;" id="btn-logout">
+                            <span class="icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        <% } else { %>
+            <!-- Slide 24: Public Homepage (not logged in) -->
+            <div style="text-align: center; max-width: 600px; margin: 0 auto;">
+                <div class="page-header" style="justify-content: center; border: none;">
+                    <h1>🎮 CodeRealm: The OOP Chronicles</h1>
+                </div>
+
+                <div class="animate-slide-up" style="display: flex; flex-direction: column; gap: var(--space-lg); max-width: 400px; margin: 0 auto;">
+                    <a href="/game/create" class="player-btn" id="btn-create-room-pub">
+                        <span class="icon">🏰</span> Create Room
+                    </a>
+                    <a href="/game/join" class="player-btn" id="btn-join-room-pub">
+                        <span class="icon">🚪</span> Join Room
+                    </a>
+                    <a href="/leaderboard" class="player-btn" id="btn-leaderboard-pub">
+                        <span class="icon">🏆</span> Leaderboard
+                    </a>
+                    <a href="/download" class="player-btn" id="btn-download-pub">
+                        <span class="icon">📦</span> Physical Component Download
+                    </a>
+                    <a href="/rules" class="player-btn" id="btn-rules-pub">
+                        <span class="icon">📜</span> Rules
+                    </a>
+                </div>
+
+                <div style="margin-top: var(--space-2xl);">
+                    <a href="/auth/login" class="btn btn-primary btn-lg" id="btn-login">🔑 Login</a>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

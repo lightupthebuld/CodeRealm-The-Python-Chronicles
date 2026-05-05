@@ -1,0 +1,137 @@
+<%- include('../partials/header', { title: title, extraCSS: ['auth.css'] }) %>
+
+    <!-- Background Effects -->
+    <div class="auth-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <main class="auth-page">
+        <div class="auth-card">
+            <div class="glass-card">
+                <!-- Logo -->
+                <div class="auth-logo">
+                    <div class="auth-logo-icon">⚔️</div>
+                    <h1>CodeRealm</h1>
+                    <p>Enter the realm of OOP mastery</p>
+                </div>
+
+                <!-- Flash Messages -->
+                <% if (typeof success !=='undefined' && success) { %>
+                    <div class="alert alert-success" id="alert-success">
+                        ✓ <%= success %>
+                    </div>
+                    <% } %>
+
+                        <% if (typeof error !=='undefined' && error) { %>
+                            <div class="alert alert-danger" id="alert-error">
+                                ⚠ <%= error %>
+                            </div>
+                            <% } %>
+
+                                <!-- Validation Errors -->
+                                <% if (typeof errors !=='undefined' && errors && errors.length> 0) { %>
+                                    <div class="alert alert-danger" id="alert-validation">
+                                        <ul class="error-list">
+                                            <% errors.forEach(err=> { %>
+                                                <li>
+                                                    <%= err.msg %>
+                                                </li>
+                                                <% }); %>
+                                        </ul>
+                                    </div>
+                                    <% } %>
+
+                                        <!-- Login Form -->
+                                        <form action="/auth/login" method="POST" id="login-form" novalidate>
+                                            <div class="form-group">
+                                                <label for="username" class="form-label">Username or Email</label>
+                                                <div class="input-group">
+                                                    <input type="text" class="form-control" id="username"
+                                                        name="username" placeholder="Enter your username or email"
+                                                        value="<%= typeof old !== 'undefined' && old ? old.username || '' : '' %>"
+                                                        required autocomplete="username">
+                                                    <span class="input-icon">👤</span>
+                                                </div>
+                                            </div>
+
+                                            <div class="form-group">
+                                                <label for="password" class="form-label">Password</label>
+                                                <div class="input-group">
+                                                    <input type="password" class="form-control" id="password"
+                                                        name="password" placeholder="Enter your password" required
+                                                        autocomplete="current-password">
+                                                    <span class="input-icon">🔒</span>
+                                                    <button type="button" class="toggle-password" id="toggle-password"
+                                                        aria-label="Toggle password visibility">
+                                                        👁
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary btn-block btn-lg"
+                                                id="btn-login">
+                                                ⚡ Enter the Realm
+                                            </button>
+                                        </form>
+
+                                        <!-- Footer -->
+                                        <div class="auth-footer">
+                                            New to CodeRealm? <a href="/auth/register" id="link-register">Create an
+                                                account</a>
+                                        </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('toggle-password').addEventListener('click', function () {
+            const pwd = document.getElementById('password');
+            const isPassword = pwd.type === 'password';
+            pwd.type = isPassword ? 'text' : 'password';
+            this.textContent = isPassword ? '🙈' : '👁';
+        });
+
+        // Client-side validation
+        document.getElementById('login-form').addEventListener('submit', function (e) {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            let hasError = false;
+
+            // Clear previous errors
+            document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+
+            if (!username) {
+                document.getElementById('username').classList.add('is-invalid');
+                hasError = true;
+            }
+            if (!password) {
+                document.getElementById('password').classList.add('is-invalid');
+                hasError = true;
+            }
+
+            if (hasError) {
+                e.preventDefault();
+                return;
+            }
+
+            // Show loading state
+            const btn = document.getElementById('btn-login');
+            btn.classList.add('btn-loading');
+        });
+    </script>
+
+    <%- include('../partials/footer', { extraJS: [] }) %>

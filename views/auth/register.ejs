@@ -1,0 +1,219 @@
+<%- include('../partials/header', { title: title, extraCSS: ['auth.css'] }) %>
+
+    <!-- Background Effects -->
+    <div class="auth-bg">
+        <div class="orb orb-1"></div>
+        <div class="orb orb-2"></div>
+        <div class="orb orb-3"></div>
+    </div>
+
+    <div class="particles">
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+        <div class="particle"></div>
+    </div>
+
+    <main class="auth-page">
+        <div class="auth-card">
+            <div class="glass-card">
+                <!-- Logo -->
+                <div class="auth-logo">
+                    <div class="auth-logo-icon">🛡️</div>
+                    <h1>Join CodeRealm</h1>
+                    <p>Create your Code Walker identity</p>
+                </div>
+
+                <!-- Validation Errors -->
+                <% if (typeof errors !=='undefined' && errors && errors.length> 0) { %>
+                    <div class="alert alert-danger" id="alert-validation">
+                        <ul class="error-list">
+                            <% errors.forEach(err=> { %>
+                                <li>
+                                    <%= err.msg %>
+                                </li>
+                                <% }); %>
+                        </ul>
+                    </div>
+                    <% } %>
+
+                        <!-- Register Form -->
+                        <form action="/auth/register" method="POST" id="register-form" novalidate>
+                            <div class="form-group">
+                                <label for="username" class="form-label">Username</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="username" name="username"
+                                        placeholder="Choose your Code Walker name"
+                                        value="<%= typeof old !== 'undefined' && old ? old.username || '' : '' %>"
+                                        required minlength="3" maxlength="30" autocomplete="username">
+                                    <span class="input-icon">⚔️</span>
+                                </div>
+                                <span class="form-text">3-30 characters, letters, numbers and underscores only</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="email" class="form-label">Email</label>
+                                <div class="input-group">
+                                    <input type="email" class="form-control" id="email" name="email"
+                                        placeholder="Enter your email address"
+                                        value="<%= typeof old !== 'undefined' && old ? old.email || '' : '' %>" required
+                                        autocomplete="email">
+                                    <span class="input-icon">📧</span>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="password" class="form-label">Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="password" name="password"
+                                        placeholder="Create a strong password" required minlength="6"
+                                        autocomplete="new-password">
+                                    <span class="input-icon">🔒</span>
+                                    <button type="button" class="toggle-password" id="toggle-password"
+                                        aria-label="Toggle password visibility">
+                                        👁
+                                    </button>
+                                </div>
+                                <div class="password-strength" id="password-strength">
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                    <div class="bar"></div>
+                                </div>
+                                <span class="form-text">At least 6 characters with letters and numbers</span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="confirmPassword" class="form-label">Confirm Password</label>
+                                <div class="input-group">
+                                    <input type="password" class="form-control" id="confirmPassword"
+                                        name="confirmPassword" placeholder="Confirm your password" required
+                                        autocomplete="new-password">
+                                    <span class="input-icon">🔐</span>
+                                    <button type="button" class="toggle-password" id="toggle-confirm-password"
+                                        aria-label="Toggle confirm password visibility">
+                                        👁
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-register">
+                                🛡️ Create Account
+                            </button>
+                        </form>
+
+                        <!-- Footer -->
+                        <div class="auth-footer">
+                            Already a Code Walker? <a href="/auth/login" id="link-login">Sign in</a>
+                        </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Toggle password visibility
+        document.getElementById('toggle-password').addEventListener('click', function () {
+            const pwd = document.getElementById('password');
+            const isPassword = pwd.type === 'password';
+            pwd.type = isPassword ? 'text' : 'password';
+            this.textContent = isPassword ? '🙈' : '👁';
+        });
+
+        // Toggle confirm password visibility
+        document.getElementById('toggle-confirm-password').addEventListener('click', function () {
+            const pwd = document.getElementById('confirmPassword');
+            const isPassword = pwd.type === 'password';
+            pwd.type = isPassword ? 'text' : 'password';
+            this.textContent = isPassword ? '🙈' : '👁';
+        });
+
+        // Password strength indicator
+        document.getElementById('password').addEventListener('input', function () {
+            const password = this.value;
+            const strength = document.getElementById('password-strength');
+
+            strength.className = 'password-strength';
+
+            if (password.length === 0) return;
+
+            let score = 0;
+            if (password.length >= 6) score++;
+            if (password.length >= 8) score++;
+            if (/[a-zA-Z]/.test(password) && /\d/.test(password)) score++;
+            if (/[^a-zA-Z0-9]/.test(password)) score++;
+
+            if (score <= 1) strength.classList.add('weak');
+            else if (score === 2) strength.classList.add('fair');
+            else if (score === 3) strength.classList.add('strong');
+            else strength.classList.add('very-strong');
+        });
+
+        // Client-side validation
+        document.getElementById('register-form').addEventListener('submit', function (e) {
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            let errors = [];
+
+            // Clear previous errors
+            document.querySelectorAll('.form-control').forEach(el => el.classList.remove('is-invalid'));
+
+            if (username.length < 3 || username.length > 30) {
+                document.getElementById('username').classList.add('is-invalid');
+                errors.push('Username must be 3-30 characters');
+            }
+
+            if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                document.getElementById('username').classList.add('is-invalid');
+                errors.push('Username can only contain letters, numbers and underscores');
+            }
+
+            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                document.getElementById('email').classList.add('is-invalid');
+                errors.push('Please enter a valid email address');
+            }
+
+            if (password.length < 6) {
+                document.getElementById('password').classList.add('is-invalid');
+                errors.push('Password must be at least 6 characters');
+            }
+
+            if (!/^(?=.*[a-zA-Z])(?=.*\d)/.test(password)) {
+                document.getElementById('password').classList.add('is-invalid');
+                errors.push('Password must contain at least one letter and one number');
+            }
+
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPassword').classList.add('is-invalid');
+                errors.push('Passwords do not match');
+            }
+
+            if (errors.length > 0) {
+                e.preventDefault();
+                // Show errors
+                let existingAlert = document.getElementById('alert-validation');
+                if (!existingAlert) {
+                    existingAlert = document.createElement('div');
+                    existingAlert.id = 'alert-validation';
+                    existingAlert.className = 'alert alert-danger';
+                    const form = document.getElementById('register-form');
+                    form.parentNode.insertBefore(existingAlert, form);
+                }
+                existingAlert.innerHTML = '<ul class="error-list">' +
+                    errors.map(err => `<li>${err}</li>`).join('') +
+                    '</ul>';
+                return;
+            }
+
+            // Show loading state
+            const btn = document.getElementById('btn-register');
+            btn.classList.add('btn-loading');
+        });
+    </script>
+
+    <%- include('../partials/footer', { extraJS: [] }) %>

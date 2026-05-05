@@ -1,0 +1,103 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-back">← Back</a>
+            <h1>🏰 Lobby – <%= typeof roomCode !== 'undefined' ? roomCode : "XXX" %>'s Room</h1>
+        </div>
+
+        <div class="lobby-card animate-slide-up">
+            <div class="room-code-banner" id="room-code">
+                Room Code: <%= typeof roomCode !== 'undefined' ? roomCode : 'XXXXXX' %>
+            </div>
+            <div class="lobby-body">
+                <div class="player-list">
+                    <h3>Players</h3>
+                    <ul id="player-list">
+                        <li>Waiting for host to start...</li>
+                    </ul>
+                </div>
+                <div class="qr-section">
+                    <div class="qr-placeholder" id="join-qr" style="background: none; border: none; padding: 0;">
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<%= typeof roomCode !== 'undefined' ? roomCode : '' %>" alt="Room QR" style="border-radius: 8px;" />
+                    </div>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; display: block;">Scan to join</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="text-align: right; margin-top: var(--space-xl);">
+            <button class="btn btn-primary btn-lg" id="btn-ready">✅ Ready</button>
+        </div>
+    </div>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const roomCode = '<%= typeof roomCode !== "undefined" ? roomCode : "" %>';
+    const username = '<%= user ? user.username : "Player" %>';
+
+    // Join room
+    socket.emit('join-room', { roomCode, username, isHost: false });
+
+    // Listen for player list updates
+    socket.on('update-player-list', (players) => {
+        const playerList = document.getElementById('player-list');
+        playerList.innerHTML = '';
+        
+        if (players.length === 0) {
+            playerList.innerHTML = '<li>Waiting for host to start...</li>';
+            return;
+        }
+
+        players.forEach(p => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.padding = '10px 0';
+            li.style.borderBottom = '1px solid var(--border-color)';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.textContent = p.username + (p.isHost ? ' 👑' : '');
+            
+            const statusSpan = document.createElement('span');
+            if (p.isReady) {
+                statusSpan.textContent = '✅ Ready';
+                statusSpan.style.color = 'var(--success-color)';
+            } else {
+                statusSpan.textContent = '⏳ Waiting';
+                statusSpan.style.color = 'var(--text-muted)';
+            }
+            
+            li.appendChild(nameSpan);
+            li.appendChild(statusSpan);
+            playerList.appendChild(li);
+        });
+    });
+
+    // Handle Ready / Cancel Ready button
+    let isReady = false;
+    document.getElementById('btn-ready').addEventListener('click', () => {
+        if (!isReady) {
+            socket.emit('player-ready', { roomCode, username });
+            document.getElementById('btn-ready').textContent = '❌ Cancel Ready';
+            document.getElementById('btn-ready').style.background = 'var(--danger-color)';
+            isReady = true;
+        } else {
+            socket.emit('player-unready', { roomCode, username });
+            document.getElementById('btn-ready').textContent = '✅ Ready';
+            document.getElementById('btn-ready').style.background = '';
+            isReady = false;
+        }
+    });
+
+    // Listen for game start
+    socket.on('game-start', (data) => {
+        window.location.href = `/game/play/${roomCode}`;
+    });
+</script>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

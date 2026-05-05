@@ -1,0 +1,109 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container" style="padding-top: var(--space-2xl);">
+        <div class="page-header" style="justify-content: center; border: none;">
+            <h1>📝 Question</h1>
+        </div>
+
+        <div class="question-card animate-slide-up">
+            <% if (question) { %>
+                <div class="question-content">
+                    <div class="question-header">
+                        <span class="badge" style="background: var(--primary-color); padding: 5px 10px; border-radius: 4px; font-size: 0.8rem;"><%= tileType %> TILE</span>
+                        <% 
+                            let diffColor = 'var(--success-color)';
+                            if (question.difficulty === 'hard') diffColor = 'var(--danger-color)';
+                            else if (question.difficulty === 'medium') diffColor = 'orange';
+                            let diffStyle = `style="background: ${diffColor}; padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; margin-left: 10px;"`;
+                        %>
+                        <span class="badge" <%- diffStyle %>><%= question.difficulty.toUpperCase() %></span>
+                    </div>
+                    <div class="question-text" id="question-text" style="margin-top: 15px;">
+                        <%= question.questiontext %>
+                    </div>
+                </div>
+
+                <div class="answer-options" id="answer-options">
+                    <% const letters = ['A', 'B', 'C', 'D']; %>
+                    <% answers.forEach((ans, index) => { %>
+                        <button class="answer-btn" id="answer-<%= index %>" data-id="<%= ans.answerid %>" onclick="selectAnswer(this)">
+                            <strong><%= letters[index] %>.</strong> <%= ans.answertext %>
+                        </button>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <div class="question-content">
+                    <div class="question-text">Loading question...</div>
+                </div>
+            <% } %>
+
+            <div class="question-footer">
+                <div class="timer-display" id="timer">
+                    ⏱️ Time Left: 30s
+                </div>
+                <button class="btn btn-primary btn-lg" id="btn-submit">📤 Submit</button>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+    const roomCode = '<%= roomCode %>';
+
+    let timeLeft = 30;
+    const timerEl = document.getElementById('timer');
+    let selectedAnswerId = null;
+    
+    const interval = setInterval(() => {
+        timeLeft--;
+        timerEl.innerHTML = `⏱️ Time Left: ${timeLeft}s`;
+        if (timeLeft <= 10) {
+            timerEl.style.color = 'var(--danger-color)';
+            timerEl.style.fontWeight = 'bold';
+        }
+        if (timeLeft <= 0) {
+            clearInterval(interval);
+            submitAnswer();
+        }
+    }, 1000);
+
+    function selectAnswer(btn) {
+        document.querySelectorAll('.answer-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedAnswerId = btn.getAttribute('data-id');
+    }
+
+    document.getElementById('btn-submit').addEventListener('click', submitAnswer);
+
+    async function submitAnswer() {
+        clearInterval(interval);
+        document.getElementById('btn-submit').disabled = true;
+        document.getElementById('btn-submit').textContent = 'Submitting...';
+        
+        try {
+            const response = await fetch(`/game/submit-answer/${roomCode}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    questionid: '<%= question ? question.questionid : "" %>',
+                    answerid: selectedAnswerId,
+                    tileType: '<%= tileType %>'
+                })
+            });
+            const result = await response.json();
+            
+            // Server already broadcasts to all players via io
+            // Just redirect back with result info for own gamelog
+            const params = `?result=${result.correct ? 'correct' : 'wrong'}&points=${result.points}&msg=${encodeURIComponent(result.eventMessage)}`;
+            window.location.href = `/game/play/${roomCode}${params}`;
+
+        } catch (err) {
+            console.error('Submission failed', err);
+            window.location.href = `/game/play/${roomCode}`;
+        }
+    }
+</script>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

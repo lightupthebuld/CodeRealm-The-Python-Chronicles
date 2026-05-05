@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header" style="flex-direction: column; align-items: flex-start; gap: var(--space-xs);">
+                    <h1>⚙️ Admin – Dashboard</h1>
+                    <% if (user) { %>
+                        <p style="color: var(--text-secondary); font-size: 1.1rem; margin-top: var(--space-xs);">Welcome back, <strong style="color: var(--primary-light);"><%= user.username %></strong>!</p>
+                    <% } %>
+                </div>
+
+                <div class="dashboard-grid animate-slide-up">
+                    <a href="/admin/users" class="dashboard-btn" id="btn-user-mgmt">
+                        <span class="icon">👥</span> User Management
+                    </a>
+
+                    <a href="/admin/questions" class="dashboard-btn" id="btn-question-mgmt">
+                        <span class="icon">📝</span> Question Management
+                    </a>
+
+                    <a href="/admin/rules" class="dashboard-btn" id="btn-rules-mgmt">
+                        <span class="icon">📜</span> Rules Management
+                    </a>
+
+                    <a href="/admin/profile" class="dashboard-btn" id="btn-admin-profile">
+                        <span class="icon">👤</span> Profile
+                    </a>
+
+                    <form action="/auth/logout" method="POST">
+                        <button type="submit" class="dashboard-btn" style="width: 100%; border: none;"
+                            id="btn-admin-logout">
+                            <span class="icon">🚪</span> Logout
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

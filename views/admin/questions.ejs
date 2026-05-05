@@ -1,0 +1,116 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/dashboard" class="btn-back" id="btn-back">← Back</a>
+                    <h1>📝 Admin – Question Management</h1>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-bar-container animate-slide-up" style="margin-bottom: var(--space-md);">
+                    <input type="text" id="search-question" class="form-control" placeholder="Search by ID, Concept, Difficulty or Question text..." style="width: 100%;">
+                </div>
+
+                <div class="data-table-wrapper animate-slide-up">
+                    <table class="data-table" id="question-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Question</th>
+                                <th>Concept</th>
+                                <th>Difficulty</th>
+                                <th>Mark</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof questions !== 'undefined' && questions.length > 0) { %>
+                                <% questions.forEach(q => { %>
+                                    <tr data-id="<%= q.questionid %>">
+                                        <td><%= q.questionid %></td>
+                                        <td style="max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"><%= q.questiontext %></td>
+                                        <td><%= q.concept %></td>
+                                        <td><span class="badge badge-<%= q.difficulty === 'hard' ? 'danger' : (q.difficulty === 'medium' ? 'warning' : 'success') %>"><%= q.difficulty %></span></td>
+                                        <td><%= q.mark %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr class="table-empty">
+                                    <td colspan="5">No questions found.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="action-buttons">
+                    <a href="/admin/questions/add" class="btn btn-primary" id="btn-add-question">➕ Add</a>
+                    <button class="btn btn-secondary" id="btn-edit-question" disabled>✏️ Edit</button>
+                    <button class="btn btn-danger" id="btn-delete-question" disabled>🗑️ Delete</button>
+                </div>
+            </div>
+        </main>
+
+        <div class="modal-overlay" id="delete-modal">
+            <div class="modal-card">
+                <h3>⚠️ Delete Confirmation</h3>
+                <p>Are you sure you want to delete question <strong id="delete-question-id-display"></strong>? This action cannot be undone.</p>
+                <div class="modal-actions">
+                    <form id="delete-form" method="POST" action="">
+                        <button type="submit" class="btn btn-danger" id="btn-confirm-delete">Yes</button>
+                    </form>
+                    <button class="btn btn-outline" id="btn-cancel-delete">No</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let selectedQuestionId = null;
+
+            // Search functionality
+            document.getElementById('search-question').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                document.querySelectorAll('#question-table tbody tr').forEach(row => {
+                    if (row.classList.contains('table-empty')) return;
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+
+            // Handle row selection
+            document.querySelectorAll('#question-table tbody tr').forEach(row => {
+                if (row.classList.contains('table-empty')) return;
+                
+                row.addEventListener('click', function() {
+                    // Deselect previously selected
+                    document.querySelectorAll('#question-table tbody tr').forEach(r => r.classList.remove('selected'));
+                    
+                    // Select current
+                    this.classList.add('selected');
+                    selectedQuestionId = this.getAttribute('data-id');
+                    
+                    // Enable buttons
+                    const editBtn = document.getElementById('btn-edit-question');
+                    editBtn.disabled = false;
+                    editBtn.onclick = () => window.location.href = `/admin/questions/${selectedQuestionId}/edit`;
+                    
+                    document.getElementById('btn-delete-question').disabled = false;
+                });
+            });
+
+            document.getElementById('btn-delete-question').addEventListener('click', function () {
+                if (!selectedQuestionId) return;
+                document.getElementById('delete-question-id-display').textContent = '#' + selectedQuestionId;
+                document.getElementById('delete-form').action = `/admin/questions/${selectedQuestionId}/delete`;
+                document.getElementById('delete-modal').classList.add('active');
+            });
+            document.getElementById('btn-cancel-delete').addEventListener('click', function () {
+                document.getElementById('delete-modal').classList.remove('active');
+            });
+            document.getElementById('delete-modal').addEventListener('click', function (e) {
+                if (e.target === this) this.classList.remove('active');
+            });
+        </script>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

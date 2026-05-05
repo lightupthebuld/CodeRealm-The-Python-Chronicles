@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeRealm: Physical Board</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --text-color: #f8fafc;
+            --tile-normal: #1e293b;
+            --tile-monster: #7f1d1d;
+            --tile-treasure: #ca8a04;
+            --tile-boss: #4c0519;
+            --border: #334155;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            color: #38bdf8;
+            margin-bottom: 5px;
+        }
+        p {
+            color: #94a3b8;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            max-width: 900px;
+            width: 100%;
+        }
+        .tile {
+            background-color: var(--tile-normal);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        .tile:hover {
+            transform: translateY(-5px);
+        }
+        .tile.monster { background-color: var(--tile-monster); border-color: #ef4444; }
+        .tile.treasure { background-color: var(--tile-treasure); border-color: #facc15; }
+        .tile.boss { background-color: var(--tile-boss); border-color: #f43f5e; grid-column: span 2; grid-row: span 2; }
+        
+        .qr-code {
+            width: 120px;
+            height: 120px;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+        }
+        .tile-name {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .tile-desc {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+        
+        /* Grid Layout Magic for a spiral path */
+        .t1 { grid-column: 1; grid-row: 1; }
+        .t2 { grid-column: 2; grid-row: 1; }
+        .t3 { grid-column: 3; grid-row: 1; }
+        .t4 { grid-column: 4; grid-row: 1; }
+        
+        .t5 { grid-column: 4; grid-row: 2; }
+        .t6 { grid-column: 4; grid-row: 3; }
+        .t7 { grid-column: 4; grid-row: 4; }
+        
+        .t8 { grid-column: 3; grid-row: 4; }
+        .t9 { grid-column: 2; grid-row: 4; }
+        .t10 { grid-column: 1; grid-row: 4; }
+        
+        .t11 { grid-column: 1; grid-row: 3; }
+        .t12 { grid-column: 1; grid-row: 2; }
+        
+        .tboss { grid-column: 2 / 4; grid-row: 2 / 4; }
+
+    </style>
+</head>
+<body>
+    <h1>CodeRealm: The Python Chronicles</h1>
+    <p>Physical Board Layout. Use your phone to scan the QR codes when your piece lands on a tile.</p>
+    
+    <div class="board">
+        <div class="tile t1">
+            <div class="tile-name">Start / Normal</div>
+            <div class="tile-desc">Answer correctly to gain points and HP.</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile t2">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile monster t3">
+            <div class="tile-name">Monster</div>
+            <div class="tile-desc">Defeat to gain points. Fail = -10 HP.</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-MONSTER" alt="QR">
+        </div>
+        <div class="tile t4">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile treasure t5">
+            <div class="tile-name">Treasure</div>
+            <div class="tile-desc">Answer correctly for massive points!</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-TREASURE" alt="QR">
+        </div>
+        <div class="tile t6">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile monster t7">
+            <div class="tile-name">Monster</div>
+            <div class="tile-desc">Defeat to gain points. Fail = -10 HP.</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-MONSTER" alt="QR">
+        </div>
+        <div class="tile t8">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile t9">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile treasure t10">
+            <div class="tile-name">Treasure</div>
+            <div class="tile-desc">Answer correctly for massive points!</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-TREASURE" alt="QR">
+        </div>
+        <div class="tile t11">
+            <div class="tile-name">Normal</div>
+            <div class="tile-desc">+10 Pts, +5 HP</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-NORMAL" alt="QR">
+        </div>
+        <div class="tile monster t12">
+            <div class="tile-name">Monster</div>
+            <div class="tile-desc">Defeat to gain points. Fail = -10 HP.</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=TILE-MONSTER" alt="QR">
+        </div>
+        
+        <div class="tile boss tboss">
+            <div class="tile-name" style="font-size: 2rem; margin-bottom: 10px;">👹 SYNTAX TERROR</div>
+            <div class="tile-desc" style="font-size: 1.1rem; max-width: 80%;">The Final Boss. Answer correctly to deal 20 DMG. Answer wrong and take 15 DMG.</div>
+            <img class="qr-code" src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=TILE-BOSS" alt="QR" style="width: 180px; height: 180px;">
+        </div>
+    </div>
+</body>
+</html>

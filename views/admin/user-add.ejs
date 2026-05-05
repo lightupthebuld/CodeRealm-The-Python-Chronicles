@@ -1,0 +1,47 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/users" class="btn-back" id="btn-back">← Back</a>
+                    <h1>➕ Admin – Add User</h1>
+                </div>
+
+                <div class="form-card animate-slide-up">
+                    <form id="add-user-form" action="/admin/users/add" method="POST" novalidate>
+                        <div class="form-group">
+                            <label for="username" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="username" name="username"
+                                placeholder="Enter username" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="email" name="email"
+                                placeholder="Enter email address" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="password" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="password" name="password"
+                                placeholder="Enter password" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-control" id="role" name="role">
+                                <option value="player">Player</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+
+                        <div style="text-align: right; margin-top: var(--space-xl);">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btn-add">➕ Add</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

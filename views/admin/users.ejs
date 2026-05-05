@@ -1,0 +1,122 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/dashboard" class="btn-back" id="btn-back">← Back</a>
+                    <h1>👥 Admin – User Management</h1>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="search-bar-container animate-slide-up" style="margin-bottom: var(--space-md);">
+                    <input type="text" id="search-user" class="form-control" placeholder="Search by ID, Username, Email or Role..." style="width: 100%;">
+                </div>
+
+                <!-- User Table -->
+                <div class="data-table-wrapper animate-slide-up">
+                    <table class="data-table" id="user-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Created</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (typeof users !== 'undefined' && users.length > 0) { %>
+                                <% users.forEach(u => { %>
+                                    <tr data-id="<%= u.userid %>">
+                                        <td><%= u.displayId %></td>
+                                        <td><%= u.username %></td>
+                                        <td><%= u.email %></td>
+                                        <td><span <%- u.role === 'admin' ? 'style="color: var(--primary-light)"' : 'style="color: var(--text-secondary)"' %>><%= u.role %></span></td>
+                                        <td><%= new Date(u.createtime).toLocaleDateString() %></td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr class="table-empty">
+                                    <td colspan="5">No users found.</td>
+                                </tr>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="action-buttons">
+                    <a href="/admin/users/add" class="btn btn-primary" id="btn-add-user">➕ Add</a>
+                    <button class="btn btn-secondary" id="btn-edit-user" disabled>✏️ Edit</button>
+                    <button class="btn btn-danger" id="btn-delete-user" disabled>🗑️ Delete</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Delete Confirmation Modal -->
+        <div class="modal-overlay" id="delete-modal">
+            <div class="modal-card">
+                <h3>⚠️ Delete Confirmation</h3>
+                <p>Are you sure you want to delete <strong id="delete-username-display">this user</strong>? This action cannot be undone.</p>
+                <div class="modal-actions">
+                    <form id="delete-form" method="POST" action="">
+                        <button type="submit" class="btn btn-danger" id="btn-confirm-delete">Yes</button>
+                    </form>
+                    <button class="btn btn-outline" id="btn-cancel-delete">No</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            let selectedUserId = null;
+            let selectedUsername = '';
+
+            // Search functionality
+            document.getElementById('search-user').addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                document.querySelectorAll('#user-table tbody tr').forEach(row => {
+                    if (row.classList.contains('table-empty')) return;
+                    const text = row.textContent.toLowerCase();
+                    row.style.display = text.includes(searchTerm) ? '' : 'none';
+                });
+            });
+
+            // Handle row selection
+            document.querySelectorAll('#user-table tbody tr').forEach(row => {
+                if (row.classList.contains('table-empty')) return;
+                
+                row.addEventListener('click', function() {
+                    // Deselect previously selected
+                    document.querySelectorAll('#user-table tbody tr').forEach(r => r.classList.remove('selected'));
+                    
+                    // Select current
+                    this.classList.add('selected');
+                    selectedUserId = this.getAttribute('data-id');
+                    selectedUsername = this.children[1].textContent;
+                    
+                    // Enable buttons
+                    const editBtn = document.getElementById('btn-edit-user');
+                    editBtn.disabled = false;
+                    editBtn.onclick = () => window.location.href = `/admin/users/${selectedUserId}/edit`;
+                    
+                    document.getElementById('btn-delete-user').disabled = false;
+                });
+            });
+
+            // Delete modal toggle
+            document.getElementById('btn-delete-user').addEventListener('click', function () {
+                if (!selectedUserId) return;
+                document.getElementById('delete-username-display').textContent = selectedUsername;
+                document.getElementById('delete-form').action = `/admin/users/${selectedUserId}/delete`;
+                document.getElementById('delete-modal').classList.add('active');
+            });
+            document.getElementById('btn-cancel-delete').addEventListener('click', function () {
+                document.getElementById('delete-modal').classList.remove('active');
+            });
+            document.getElementById('delete-modal').addEventListener('click', function (e) {
+                if (e.target === this) this.classList.remove('active');
+            });
+        </script>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

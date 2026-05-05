@@ -1,0 +1,52 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-back">← Back</a>
+            <h1>📦 Physical Component</h1>
+        </div>
+
+        <div class="download-grid animate-slide-up" style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="download-card" style="text-align: center;">
+                <h3>🗺️ Game Map</h3>
+                <div class="download-preview" style="margin: 10px auto;">
+                    <span class="preview-icon">🗺️</span>
+                </div>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Download the physical game board map.</p>
+                <a href="#" class="btn btn-primary" id="btn-download-map">📥 Download Map</a>
+            </div>
+
+            <div class="download-card" style="text-align: center;">
+                <h3>🃏 QR Cards (Printable)</h3>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">Print these generic QR cards. The game will randomly draw a question from the database when scanned.</p>
+                
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
+                    <!-- Random Encounter -->
+                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <h4 style="color: black; margin-bottom: 5px;">Random Encounter</h4>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-RANDOM" alt="Random QR" />
+                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-RANDOM</p>
+                    </div>
+
+                    <!-- Easy Encounter -->
+                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <h4 style="color: black; margin-bottom: 5px;">Easy Encounter</h4>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-EASY" alt="Easy QR" />
+                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-EASY</p>
+                    </div>
+
+                    <!-- Hard Encounter -->
+                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
+                        <h4 style="color: black; margin-bottom: 5px;">Hard Encounter</h4>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-HARD" alt="Hard QR" />
+                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-HARD</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

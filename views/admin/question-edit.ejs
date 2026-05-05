@@ -1,0 +1,92 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/questions" class="btn-back" id="btn-back">← Back</a>
+                    <h1>✏️ Admin – Edit Question</h1>
+                </div>
+
+                <div class="form-card animate-slide-up">
+                    <form id="edit-question-form" action="/admin/questions/<%= editQuestion.questionid %>/edit" method="POST" novalidate>
+                        <div class="question-form-layout">
+                            <div class="form-group">
+                                <label for="questiontext" class="form-label">Question</label>
+                                <textarea class="form-control" id="questiontext" name="questiontext" rows="5"
+                                    placeholder="Enter the question text..." required><%= editQuestion.questiontext %></textarea>
+                            </div>
+                            <div class="upload-area">
+                                <div class="picture-preview" id="picture-preview">
+                                    📷 Picture Preview
+                                </div>
+                                <label class="btn btn-outline btn-sm" style="cursor: pointer; text-align: center;">
+                                    📤 Picture Upload
+                                    <input type="file" id="picture-upload" name="picture" accept="image/*"
+                                        style="display: none;">
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-row" style="margin-top: var(--space-lg);">
+                            <div class="form-group">
+                                <label for="concept" class="form-label">Concept</label>
+                                <select class="form-control" id="concept" name="concept">
+                                    <option value="if_else" <%= editQuestion.concept === 'if_else' ? 'selected' : '' %>>If/Else Statements (Decision Path)</option>
+                                    <option value="loops" <%= editQuestion.concept === 'loops' ? 'selected' : '' %>>Loops - For/While (Endless Cycle)</option>
+                                    <option value="switch" <%= editQuestion.concept === 'switch' ? 'selected' : '' %>>Switch/Case (Multiple Choices)</option>
+                                    <option value="exceptions" <%= editQuestion.concept === 'exceptions' ? 'selected' : '' %>>Exception Handling (Error Trap)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="difficulty" class="form-label">Difficulty</label>
+                                <select class="form-control" id="difficulty" name="difficulty">
+                                    <option value="easy" <%= editQuestion.difficulty === 'easy' ? 'selected' : '' %>>Easy</option>
+                                    <option value="medium" <%= editQuestion.difficulty === 'medium' ? 'selected' : '' %>>Medium</option>
+                                    <option value="hard" <%= editQuestion.difficulty === 'hard' ? 'selected' : '' %>>Hard</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Answer Options</label>
+                            <div class="answer-grid">
+                                <% const labels = ['A', 'B', 'C', 'D']; %>
+                                <% for(let i=0; i<4; i++) { %>
+                                    <div class="answer-option">
+                                        <span class="option-label"><%= labels[i] %></span>
+                                        <input type="text" class="form-control" id="option-<%= labels[i].toLowerCase() %>" name="options[]"
+                                            value="<%= editAnswers[i] ? editAnswers[i].answertext : '' %>" placeholder="Option <%= labels[i] %>" required>
+                                        <input type="hidden" name="answerids[]" value="<%= editAnswers[i] ? editAnswers[i].answerid : '' %>">
+                                        <div class="correct-indicator">
+                                            <input type="radio" name="correct" value="<%= i %>" id="correct-<%= labels[i].toLowerCase() %>" <%= editAnswers[i] && editAnswers[i].iscorrect ? 'checked' : '' %>> <label
+                                                for="correct-<%= labels[i].toLowerCase() %>"
+                                                style="font-size:0.8rem; color:var(--text-muted);">Correct</label>
+                                        </div>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <div style="text-align: right; margin-top: var(--space-xl);">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btn-update">💾 Update</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </main>
+
+        <script>
+            document.getElementById('picture-upload').addEventListener('change', function (e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function (e) {
+                        document.getElementById('picture-preview').innerHTML = '<img src="' + e.target.result + '" alt="Preview">';
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        </script>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

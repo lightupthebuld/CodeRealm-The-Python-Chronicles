@@ -1,0 +1,40 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-back">← Back</a>
+            <h1>🏆 Leaderboard</h1>
+        </div>
+
+        <div class="leaderboard-card animate-slide-up" style="background: var(--bg-surface); padding: var(--space-xl); border-radius: var(--radius-lg); border: 1px solid var(--border-color); box-shadow: var(--shadow-md);">
+            <p style="text-align: center; color: var(--text-secondary); margin-bottom: var(--space-lg);">Top players based on total score across all games.</p>
+            
+            <% if (leaders && leaders.length > 0) { %>
+                <ul class="leaderboard-list" style="list-style: none; padding: 0; margin: 0;">
+                    <% leaders.forEach((leader, index) => { %>
+                        <li style="display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid var(--border-color); <%= index === 0 ? 'background: rgba(255, 215, 0, 0.1); border-radius: 8px;' : '' %>">
+                            <div style="display: flex; align-items: center; gap: 15px;">
+                                <span style="font-size: 1.5rem; font-weight: bold; color: <%= index === 0 ? 'gold' : (index === 1 ? 'silver' : (index === 2 ? '#cd7f32' : 'var(--text-muted)')) %>;">
+                                    #<%= index + 1 %>
+                                </span>
+                                <span style="font-size: 1.2rem; font-weight: <%= index < 3 ? 'bold' : 'normal' %>;"><%= leader.username %></span>
+                            </div>
+                            <div style="font-size: 1.2rem; font-weight: bold; color: var(--primary-color);">
+                                <%= leader.total_score %> pts
+                            </div>
+                        </li>
+                    <% }) %>
+                </ul>
+            <% } else { %>
+                <div style="text-align: center; padding: 40px; color: var(--text-muted);">
+                    <span style="font-size: 3rem; display: block; margin-bottom: 10px;">📉</span>
+                    <p>No players on the leaderboard yet. Be the first to play!</p>
+                </div>
+            <% } %>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

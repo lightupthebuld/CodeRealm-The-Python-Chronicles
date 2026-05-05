@@ -1,0 +1,35 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container" style="padding-top: var(--space-2xl);">
+        <div class="page-header" style="justify-content: center; border: none;">
+            <h1>🏁 Game Result</h1>
+        </div>
+
+        <div class="result-card animate-slide-up">
+            <div class="result-icon">🏆</div>
+            <h2 style="color: var(--accent-light);">Game Over!</h2>
+            <p>The adventure has ended. Here are the final standings:</p>
+            <div style="margin-top: var(--space-xl); width: 100%;">
+                <table class="data-table" style="font-size: 0.9rem;">
+                    <thead>
+                        <tr><th>Rank</th><th>Player</th><th>Score</th><th>Status</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr><td>🥇 1</td><td>Player 1</td><td>250</td><td style="color:var(--success);">Survived</td></tr>
+                        <tr><td>🥈 2</td><td>Player 2</td><td>180</td><td style="color:var(--success);">Survived</td></tr>
+                        <tr><td>🥉 3</td><td>Player 3</td><td>120</td><td style="color:var(--danger);">Eliminated</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="result-actions">
+            <a href="/" class="btn btn-primary btn-lg" id="btn-back-lobby">🏠 Back to Lobby</a>
+            <a href="/" class="btn btn-outline btn-lg" id="btn-exit-lobby">🚪 Exit Lobby</a>
+        </div>
+    </div>
+</main>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

@@ -1,0 +1,46 @@
+<%- include('../partials/header', { title: title, extraCSS: ['admin.css'] }) %>
+    <%- include('../partials/navbar') %>
+
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/admin/dashboard" class="btn-back" id="btn-back">← Back</a>
+                    <h1>👤 Admin – Profile</h1>
+                </div>
+
+                <div class="form-card animate-slide-up" style="text-align: center;">
+                    <div style="font-size: 4rem; margin-bottom: var(--space-lg);">👤</div>
+                    <h2 style="margin-bottom: var(--space-sm);">
+                        <%= user ? user.username : 'Admin' %>
+                    </h2>
+                    <p style="color: var(--text-muted); margin-bottom: var(--space-xl);">
+                        <%= user ? user.email : 'admin@coderealm.com' %>
+                    </p>
+
+                    <div style="text-align: left;">
+                        <div class="form-group">
+                            <label class="form-label">Username</label>
+                            <p style="color: var(--text-primary);">
+                                <%= user ? user.username : 'admin' %>
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email</label>
+                            <p style="color: var(--text-primary);">
+                                <%= user ? user.email : 'admin@coderealm.com' %>
+                            </p>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Role</label>
+                            <p style="color: var(--primary-light); font-weight: 600;">Admin</p>
+                        </div>
+                    </div>
+
+                    <div style="text-align: right; margin-top: var(--space-xl);">
+                        <a href="/profile/edit" class="btn btn-primary" id="btn-edit-profile">✏️ Edit</a>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

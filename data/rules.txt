@@ -1,0 +1,15 @@
+CodeRealm: The OOP Chronicles - Game Rules
+
+1. SETUP
+   - Each player creates an account and joins a game room.
+   - The physical board game is set up with the map and QR cards.
+   - Each player starts with 100 HP, 100 SAN, and base skill values.
+
+2. GAMEPLAY
+   - Players take turns rolling a physical die to move on the board.
+   - When landing on an event space, scan the QR card to trigger an event.
+   - The web app will display an OOP question related to the event.
+   - Answer correctly to gain a skill bonus for the dice check.
+   - The web app rolls a D100 and compares against your skill value.
+
+Good Luck!

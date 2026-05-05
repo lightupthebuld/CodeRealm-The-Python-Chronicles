@@ -1,0 +1,225 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container">
+        <div class="page-header">
+            <a href="/" class="btn-back" id="btn-leave">🚪 Leave Game</a>
+            <h1>⚔️ Gameplay</h1>
+        </div>
+
+        <div class="gameplay-grid animate-slide-up">
+            <!-- Boss Status -->
+            <div class="boss-status" style="background: rgba(220, 53, 69, 0.1); border: 2px solid var(--danger-color); padding: 15px; border-radius: var(--radius-md); margin-bottom: 15px; text-align: center;">
+                <h3 style="color: var(--danger-color); margin-bottom: 10px;">👹 Boss: Syntax Terror</h3>
+                <div class="stat-bar" style="margin-bottom: 0;">
+                    <label style="font-size: 1rem; font-weight: bold;">HP <span id="boss-hp-text">100/100</span></label>
+                    <div class="bar" style="height: 20px; background: rgba(255,255,255,0.2);"><div class="bar-fill bar-hp" id="boss-hp-bar" style="width: 100%; background: var(--danger-color);"></div></div>
+                </div>
+            </div>
+
+            <!-- Character Status -->
+            <div class="char-status">
+                <h3>⚔️ Your Status</h3>
+                <div class="stat-bar">
+                    <label>HP <span id="player-hp-text">100/100</span></label>
+                    <div class="bar"><div class="bar-fill bar-hp" id="player-hp-bar" style="width: 100%"></div></div>
+                </div>
+            </div>
+
+            <!-- Current Turn -->
+            <div class="current-turn" id="current-turn">
+                🎲 Current Turn: Player 1
+            </div>
+
+            <!-- Leaderboard -->
+            <div class="leaderboard-panel">
+                <h3>🏆 Live Leaderboard</h3>
+                <table class="data-table" style="font-size: 0.8rem;">
+                    <thead><tr><th>#</th><th>Player</th><th>Score</th></tr></thead>
+                    <tbody id="leaderboard-body">
+                        <tr><td colspan="3">Syncing...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Gamelog -->
+            <div class="gamelog-panel">
+                <h3>📋 Gamelog</h3>
+                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                    <p>Game started. Good luck, Code Walker!</p>
+                </div>
+            </div>
+
+            <!-- Instruction -->
+            <div class="instruction-box">
+                <h3>📖 Instruction</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Roll your physical die and move your piece on the board. When you land on a special tile, scan the QR card to trigger an event.</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="gameplay-actions">
+                <div id="event-display" class="instruction-box" style="margin-bottom: 10px; background: rgba(26, 115, 232, 0.1); border: 1px solid var(--primary-color);">
+                    <strong style="color: var(--primary-color);">🎭 Current Event:</strong> <span>Waiting for scan...</span>
+                </div>
+                
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <a href="/game/scan/<%= roomCode %>" class="btn btn-primary" id="btn-scan-qr" style="flex: 1;">📷 Scan QR</a>
+                    <button class="btn btn-secondary" id="btn-end-turn" onclick="endTurn()" style="flex: 1;">⏭️ End Turn</button>
+                    <a href="/" class="btn btn-outline" id="btn-leave-bottom">🚪 Leave Game</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const socket = io();
+    const roomCode = '<%= roomCode %>';
+    const myUsername = '<%= user ? user.username : "Player" %>';
+    
+    // Join the socket room
+    socket.emit('join-room', { roomCode, username: myUsername });
+    
+    // Request current state immediately
+    socket.emit('get-game-state', roomCode);
+
+    // Check if we just came back from answering a question (URL params)
+    const urlParams = new URLSearchParams(window.location.search);
+    const ansResult = urlParams.get('result');
+    const ansMsg = urlParams.get('msg');
+    if (ansResult) {
+        const gamelog = document.querySelector('.gamelog-panel div');
+        const newLog = document.createElement('p');
+        
+        let displayMessage = ansMsg ? ansMsg : (ansResult === 'correct' ? `You answered correctly! +${ansPoints} pts 🎉` : `Wrong answer. 0 pts ❌`);
+        
+        if (ansResult === 'correct') {
+            newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${displayMessage}`;
+            newLog.style.color = 'var(--success-color)';
+            document.querySelector('#event-display span').innerHTML = displayMessage;
+        } else {
+            newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${displayMessage}`;
+            newLog.style.color = 'var(--danger-color)';
+            document.querySelector('#event-display span').innerHTML = displayMessage;
+        }
+        gamelog.prepend(newLog);
+        // Clean URL
+        window.history.replaceState({}, '', `/game/play/${roomCode}`);
+    }
+
+    function updateUI(players, currentTurnIndex, boss) {
+        // Update Boss Status
+        if (boss) {
+            document.getElementById('boss-hp-text').textContent = `${boss.hp}/100`;
+            document.getElementById('boss-hp-bar').style.width = `${Math.max(0, boss.hp)}%`;
+            
+            if (boss.hp <= 0) {
+                alert("🎉 VICTORY! Syntax Terror has been defeated! Redirecting to Leaderboard...");
+                window.location.href = '/leaderboard';
+                return;
+            }
+        }
+
+        // Update My Player Status
+        const myPlayer = players.find(p => p.username === myUsername);
+        if (myPlayer) {
+            document.getElementById('player-hp-text').textContent = `${myPlayer.hp}/100`;
+            document.getElementById('player-hp-bar').style.width = `${Math.max(0, myPlayer.hp)}%`;
+            if (myPlayer.hp <= 0) {
+                // Handle Game Over for this player
+                document.getElementById('player-hp-bar').style.background = 'var(--text-muted)';
+            }
+        }
+
+        // Update Leaderboard
+        const tbody = document.getElementById('leaderboard-body');
+        tbody.innerHTML = '';
+        
+        // Sort players by score
+        const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+        
+        sortedPlayers.forEach((p, index) => {
+            const tr = document.createElement('tr');
+            if (index === 0) tr.style.background = 'rgba(255, 215, 0, 0.1)';
+            tr.innerHTML = `<td>${index + 1}</td><td>${p.username}</td><td>${p.score}</td>`;
+            tbody.appendChild(tr);
+        });
+
+        // Update Turn Indicator
+        const turnPlayer = players[currentTurnIndex];
+        const turnDiv = document.getElementById('current-turn');
+        
+        if (turnPlayer) {
+            turnDiv.innerHTML = `🎲 Current Turn: <strong>${turnPlayer.username}</strong>`;
+            
+            // Lock/Unlock buttons based on turn
+            const isMyTurn = (turnPlayer.username === myUsername);
+            const btnScan = document.getElementById('btn-scan-qr');
+            const btnEnd = document.getElementById('btn-end-turn');
+            const myPlayer = players.find(p => p.username === myUsername);
+            const isDead = myPlayer && myPlayer.hp <= 0;
+            
+            if (isDead) {
+                turnDiv.innerHTML = `☠️ You are dead. Spectating...`;
+                turnDiv.style.background = 'var(--danger-color)';
+                turnDiv.style.color = 'white';
+                btnScan.style.pointerEvents = 'none';
+                btnScan.style.opacity = '0.5';
+                btnEnd.disabled = true;
+                btnEnd.style.opacity = '0.5';
+            } else if (isMyTurn) {
+                btnScan.style.pointerEvents = 'auto';
+                btnScan.style.opacity = '1';
+                btnEnd.disabled = false;
+                btnEnd.style.opacity = '1';
+                turnDiv.style.background = 'var(--success-color)';
+                turnDiv.style.color = 'white';
+            } else {
+                btnScan.style.pointerEvents = 'none';
+                btnScan.style.opacity = '0.5';
+                btnEnd.disabled = true;
+                btnEnd.style.opacity = '0.5';
+                turnDiv.style.background = 'var(--bg-surface)';
+                turnDiv.style.color = 'var(--text-color)';
+            }
+        }
+    }
+
+    socket.on('game-state-sync', (data) => {
+        updateUI(data.players, data.currentTurnIndex, data.boss);
+    });
+
+    function endTurn() {
+        if(confirm("Are you sure you want to end your turn?")) {
+            socket.emit('turn-update', { roomCode: roomCode, action: 'end_turn', player: myUsername });
+        }
+    }
+
+    // Listen for turn updates to show in gamelog and update UI
+    socket.on('turn-update', (data) => {
+        const gamelog = document.querySelector('.gamelog-panel div');
+        const newLog = document.createElement('p');
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.player} ended their turn.`;
+        gamelog.prepend(newLog); // Put new logs at top
+        
+        if (data.players) {
+            updateUI(data.players, data.currentTurnIndex);
+        }
+    });
+
+    // Listen for question results to update Event Display and Leaderboard
+    socket.on('question-result', (data) => {
+        const eventDisplay = document.querySelector('#event-display span');
+        eventDisplay.innerHTML = `${data.player} scored ${data.points} points!`;
+        eventDisplay.style.fontWeight = 'bold';
+        
+        const gamelog = document.querySelector('.gamelog-panel div');
+        const newLog = document.createElement('p');
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.player} answered a question correctly and got +${data.points} pts.`;
+        gamelog.prepend(newLog);
+    });
+</script>
+
+<%- include('../partials/footer', { extraJS: [] }) %>
