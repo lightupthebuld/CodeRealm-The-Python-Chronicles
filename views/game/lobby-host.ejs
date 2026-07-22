@@ -1,110 +1,115 @@
 <%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
-<%- include('../partials/navbar') %>
+    <%- include('../partials/navbar') %>
 
-<main class="main-content">
-    <div class="container">
-        <div class="page-header">
-            <a href="/" class="btn-back" id="btn-back">← Back</a>
-            <h1>🏰 Lobby – Host's Room</h1>
-        </div>
-
-        <div class="lobby-card animate-slide-up">
-            <div class="room-code-banner" id="room-code">
-                Room Code: <%= roomCode %>
-            </div>
-            <div class="lobby-body">
-                <div class="player-list">
-                    <h3>Players</h3>
-                    <ul id="player-list">
-                        <li>Waiting for players to join...</li>
-                    </ul>
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/" class="btn-back" id="btn-back">← Back</a>
+                    <h1>🏰 Lobby – Host's Room</h1>
                 </div>
-                <div class="qr-section">
-                    <div class="qr-placeholder" id="join-qr" style="background: none; border: none; padding: 0;">
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<%= roomCode %>" alt="Room QR" style="border-radius: 8px;" />
+
+                <div class="lobby-card animate-slide-up">
+                    <div class="room-code-banner" id="room-code">
+                        Room Code: <%= roomCode %>
                     </div>
-                    <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; display: block;">Scan to join</span>
+                    <div class="lobby-body">
+                        <div class="player-list">
+                            <h3>Players</h3>
+                            <ul id="player-list">
+                                <li>Waiting for players to join...</li>
+                            </ul>
+                        </div>
+                        <div class="qr-section">
+                            <div class="qr-placeholder" id="join-qr"
+                                style="background: none; border: none; padding: 0;">
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<%= roomCode %>"
+                                    alt="Room QR" style="border-radius: 8px;" />
+                            </div>
+                            <span
+                                style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px; display: block;">Scan
+                                to join</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lobby-actions"
+                    style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-xl); align-items: flex-end;">
+                    <button class="btn btn-primary btn-lg" id="btn-start" style="min-width: 200px;">🚀 Start</button>
                 </div>
             </div>
-        </div>
+        </main>
 
-        <div class="lobby-actions" style="display: flex; flex-direction: column; gap: var(--space-md); margin-top: var(--space-xl); align-items: flex-end;">
-            <button class="btn btn-primary btn-lg" id="btn-start" style="min-width: 200px;">🚀 Start</button>
-        </div>
-    </div>
-</main>
+        <script src="/socket.io/socket.io.js"></script>
+        <script>
+            const socket = io();
+            const roomCode = '<%= roomCode %>';
+            const username = '<%= user ? user.username : "Host" %>';
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-    const socket = io();
-    const roomCode = '<%= roomCode %>';
-    const username = '<%= user ? user.username : "Host" %>';
+            // Join room as host (automatically ready)
+            socket.emit('join-room', { roomCode, username, isHost: true });
 
-    // Join room as host (automatically ready)
-    socket.emit('join-room', { roomCode, username, isHost: true });
+            // Listen for player list updates
+            socket.on('update-player-list', (players) => {
+                const playerList = document.getElementById('player-list');
+                playerList.innerHTML = '';
 
-    // Listen for player list updates
-    socket.on('update-player-list', (players) => {
-        const playerList = document.getElementById('player-list');
-        playerList.innerHTML = '';
-        
-        if (players.length === 0) {
-            playerList.innerHTML = '<li>Waiting for players to join...</li>';
-            return;
-        }
+                if (players.length === 0) {
+                    playerList.innerHTML = '<li>Waiting for players to join...</li>';
+                    return;
+                }
 
-        players.forEach(p => {
-            const li = document.createElement('li');
-            li.style.display = 'flex';
-            li.style.justifyContent = 'space-between';
-            li.style.padding = '10px 0';
-            li.style.borderBottom = '1px solid var(--border-color)';
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.textContent = p.username + (p.isHost ? ' 👑' : '');
-            
-            const statusSpan = document.createElement('span');
-            if (p.isReady) {
-                statusSpan.textContent = '✅ Ready';
-                statusSpan.style.color = 'var(--success-color)';
-            } else {
-                statusSpan.textContent = '⏳ Waiting';
-                statusSpan.style.color = 'var(--text-muted)';
-            }
-            
-            li.appendChild(nameSpan);
-            li.appendChild(statusSpan);
-            playerList.appendChild(li);
-        });
-    });
+                players.forEach(p => {
+                    const li = document.createElement('li');
+                    li.style.display = 'flex';
+                    li.style.justifyContent = 'space-between';
+                    li.style.padding = '10px 0';
+                    li.style.borderBottom = '1px solid var(--border-color)';
 
-    // Start game
-    document.getElementById('btn-start').addEventListener('click', () => {
-        // Find if there are any players with Waiting status
-        const listItems = document.getElementById('player-list').getElementsByTagName('li');
-        let allReady = true;
-        
-        // If it's just the 'Waiting for players' default message
-        if (listItems.length === 1 && listItems[0].innerText.includes('Waiting for players')) {
-            alert('You need at least one other player to start a multiplayer game!');
-            return;
-        }
+                    const nameSpan = document.createElement('span');
+                    nameSpan.textContent = p.username + (p.isHost ? ' 👑' : '');
 
-        for (let li of listItems) {
-            if (li.innerText.includes('Waiting')) {
-                allReady = false;
-                break;
-            }
-        }
-        
-        if (!allReady) {
-            alert('Cannot start game! All players must be ✅ Ready.');
-            return;
-        }
+                    const statusSpan = document.createElement('span');
+                    if (p.isReady) {
+                        statusSpan.textContent = '✅ Ready';
+                        statusSpan.style.color = 'var(--success-color)';
+                    } else {
+                        statusSpan.textContent = '⏳ Waiting';
+                        statusSpan.style.color = 'var(--text-muted)';
+                    }
 
-        socket.emit('game-start', { roomCode });
-        window.location.href = `/game/play/${roomCode}`;
-    });
-</script>
+                    li.appendChild(nameSpan);
+                    li.appendChild(statusSpan);
+                    playerList.appendChild(li);
+                });
+            });
 
-<%- include('../partials/footer', { extraJS: [] }) %>
+            // Start game
+            document.getElementById('btn-start').addEventListener('click', () => {
+                // Find if there are any players with Waiting status
+                const listItems = document.getElementById('player-list').getElementsByTagName('li');
+                let allReady = true;
+
+                // If it's just the 'Waiting for players' default message
+                if (listItems.length === 1 && listItems[0].innerText.includes('Waiting for players')) {
+                    alert('You need at least one other player to start a multiplayer game!');
+                    return;
+                }
+
+                for (let li of listItems) {
+                    if (li.innerText.includes('Waiting')) {
+                        allReady = false;
+                        break;
+                    }
+                }
+
+                if (!allReady) {
+                    alert('Cannot start game! All players must be ✅ Ready.');
+                    return;
+                }
+
+                socket.emit('game-start', { roomCode });
+                window.location.href = `/game/play/${roomCode}`;
+            });
+        </script>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

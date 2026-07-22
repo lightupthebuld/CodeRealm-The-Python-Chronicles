@@ -130,7 +130,12 @@ router.get('/questions/add', requireAdmin, (req, res) => {
 
 router.post('/questions/add', requireAdmin, async (req, res) => {
   try {
-    const { questiontext, concept, difficulty, option_a, option_b, option_c, option_d, correct } = req.body;
+    const { questiontext, difficulty, option_a, option_b, option_c, option_d, correct } = req.body;
+    const concept = 'classes_objects';
+    if (![questiontext, option_a, option_b, option_c, option_d].every(value => value && value.trim()) || !['A', 'B', 'C', 'D'].includes(correct)) {
+      req.session.error = 'Enter a question, all four answers, and select one correct answer.';
+      return res.redirect('/admin/questions/add');
+    }
     
     // Insert Question
     const [qResult] = await pool.query(
@@ -182,7 +187,14 @@ router.get('/questions/:id/edit', requireAdmin, async (req, res) => {
 router.post('/questions/:id/edit', requireAdmin, async (req, res) => {
   try {
     const questionId = req.params.id;
-    const { questiontext, concept, difficulty, options, answerids, correct } = req.body;
+    const { questiontext, difficulty, options, answerids, correct } = req.body;
+    const concept = 'classes_objects';
+    const optionList = Array.isArray(options) ? options : [options];
+    const answerIdList = Array.isArray(answerids) ? answerids : [answerids];
+    if (!questiontext || optionList.length !== 4 || optionList.some(value => !value || !value.trim()) || !Number.isInteger(Number(correct)) || Number(correct) < 0 || Number(correct) > 3) {
+      req.session.error = 'Enter a question, all four answers, and select one correct answer.';
+      return res.redirect(`/admin/questions/${req.params.id}/edit`);
+    }
     
     // Update Question
     await pool.query(
@@ -192,12 +204,12 @@ router.post('/questions/:id/edit', requireAdmin, async (req, res) => {
 
     // Update Answers
     const correctIndex = parseInt(correct);
-    for (let i = 0; i < options.length; i++) {
+    for (let i = 0; i < optionList.length; i++) {
       const isCorrect = (i === correctIndex) ? 1 : 0;
-      if (answerids[i]) {
+      if (answerIdList[i]) {
         await pool.query(
           'UPDATE Answer SET answertext = ?, iscorrect = ? WHERE answerid = ?',
-          [options[i], isCorrect, answerids[i]]
+          [optionList[i], isCorrect, answerIdList[i]]
         );
       }
     }
@@ -222,7 +234,7 @@ router.get('/rules', requireAdmin, (req, res) => {
     if (fs.existsSync(rulesPath)) {
       rulesContent = fs.readFileSync(rulesPath, 'utf8');
     } else {
-      rulesContent = `CodeRealm: The OOP Chronicles - Game Rules
+      rulesContent = `CodeRealm: Python Classes and Objects - Game Rules
 
 1. SETUP
    - Each player creates an account and joins a game room.
@@ -232,7 +244,7 @@ router.get('/rules', requireAdmin, (req, res) => {
 2. GAMEPLAY
    - Players take turns rolling a physical die to move on the board.
    - When landing on an event space, scan the QR card to trigger an event.
-   - The web app will display an OOP question related to the event.
+   - The web app will display a Python Classes and Objects question related to the event.
    - Answer correctly to gain a skill bonus for the dice check.
    - The web app rolls a D100 and compares against your skill value.`;
     }
@@ -254,6 +266,74 @@ router.post('/rules', requireAdmin, (req, res) => {
     req.session.error = "Failed to save rules.";
   }
   res.redirect('/admin/rules');
+});
+
+// Admin Physical Components
+router.get('/components', requireAdmin, (req, res) => {
+  let components = { mapImage: "/images/coderealm_map.png", qrCards: [] };
+  try {
+    const componentsPath = path.join(__dirname, '../data/components.json');
+    if (fs.existsSync(componentsPath)) {
+      components = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error reading components:', err);
+  }
+  res.render('admin/components', { title: 'Physical Components - Admin', components });
+});
+
+router.post('/components/map', requireAdmin, (req, res) => {
+  try {
+    const { mapImage } = req.body;
+    const componentsPath = path.join(__dirname, '../data/components.json');
+    let components = { mapImage: "/images/coderealm_map.png", qrCards: [] };
+    if (fs.existsSync(componentsPath)) {
+      components = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
+    }
+    components.mapImage = mapImage || "/images/coderealm_map.png";
+    fs.writeFileSync(componentsPath, JSON.stringify(components, null, 4), 'utf8');
+    req.session.success = "Map image updated successfully.";
+  } catch (err) {
+    console.error('Error updating map:', err);
+    req.session.error = "Failed to update map image.";
+  }
+  res.redirect('/admin/components');
+});
+
+router.post('/components/qr/add', requireAdmin, (req, res) => {
+  try {
+    const { id, title, data, description } = req.body;
+    const componentsPath = path.join(__dirname, '../data/components.json');
+    let components = { mapImage: "/images/coderealm_map.png", qrCards: [] };
+    if (fs.existsSync(componentsPath)) {
+      components = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
+    }
+    components.qrCards.push({ id, title, data, description });
+    fs.writeFileSync(componentsPath, JSON.stringify(components, null, 4), 'utf8');
+    req.session.success = "QR Card added successfully.";
+  } catch (err) {
+    console.error('Error adding QR Card:', err);
+    req.session.error = "Failed to add QR Card.";
+  }
+  res.redirect('/admin/components');
+});
+
+router.post('/components/qr/delete/:id', requireAdmin, (req, res) => {
+  try {
+    const cardId = req.params.id;
+    const componentsPath = path.join(__dirname, '../data/components.json');
+    let components = { mapImage: "/images/coderealm_map.png", qrCards: [] };
+    if (fs.existsSync(componentsPath)) {
+      components = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
+    }
+    components.qrCards = components.qrCards.filter(c => c.id !== cardId);
+    fs.writeFileSync(componentsPath, JSON.stringify(components, null, 4), 'utf8');
+    req.session.success = "QR Card deleted successfully.";
+  } catch (err) {
+    console.error('Error deleting QR Card:', err);
+    req.session.error = "Failed to delete QR Card.";
+  }
+  res.redirect('/admin/components');
 });
 
 // Admin Profile

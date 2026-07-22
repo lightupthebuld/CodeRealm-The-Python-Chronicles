@@ -9,30 +9,28 @@
         </div>
 
         <div class="gameplay-grid animate-slide-up">
-            <!-- Boss Status -->
-            <div class="boss-status" style="background: rgba(220, 53, 69, 0.1); border: 2px solid var(--danger-color); padding: 15px; border-radius: var(--radius-md); margin-bottom: 15px; text-align: center;">
-                <h3 style="color: var(--danger-color); margin-bottom: 10px;">👹 Boss: Syntax Terror</h3>
-                <div class="stat-bar" style="margin-bottom: 0;">
-                    <label style="font-size: 1rem; font-weight: bold;">HP <span id="boss-hp-text">100/100</span></label>
-                    <div class="bar" style="height: 20px; background: rgba(255,255,255,0.2);"><div class="bar-fill bar-hp" id="boss-hp-bar" style="width: 100%; background: var(--danger-color);"></div></div>
-                </div>
+            <!-- Row 1: Digital Dice (left half) -->
+            <div class="dice-status" style="background: rgba(26, 115, 232, 0.1); border: 2px solid var(--primary-color); padding: 15px; border-radius: var(--radius-md); text-align: center;">
+                <h3 style="color: var(--primary-color); margin-bottom: 10px;">🎲 Digital Dice (1-12)</h3>
+                <div id="dice-result" style="font-size: 2.5rem; font-weight: bold; margin: 10px 0; color: var(--primary-color);">-</div>
+                <button class="btn btn-primary" id="btn-roll-dice" onclick="rollDice()" disabled>Roll Dice</button>
             </div>
 
-            <!-- Character Status -->
-            <div class="char-status">
-                <h3>⚔️ Your Status</h3>
-                <div class="stat-bar">
-                    <label>HP <span id="player-hp-text">100/100</span></label>
-                    <div class="bar"><div class="bar-fill bar-hp" id="player-hp-bar" style="width: 100%"></div></div>
-                </div>
-            </div>
-
-            <!-- Current Turn -->
+            <!-- Row 2: Current Turn (full width) -->
             <div class="current-turn" id="current-turn">
                 🎲 Current Turn: Player 1
             </div>
 
-            <!-- Leaderboard -->
+            <!-- Row 3 Left: Character Status -->
+            <div class="char-status">
+                <h3>⚔️ Your Status</h3>
+                <div class="stat-bar" style="background: none; border: none; box-shadow: none; padding: 0;">
+                    <label style="font-weight: bold;">HP</label>
+                    <div id="player-hp-hearts" style="font-size: 1.5rem; letter-spacing: 5px;">❤️❤️❤️❤️❤️</div>
+                </div>
+            </div>
+
+            <!-- Row 3 Right: Leaderboard -->
             <div class="leaderboard-panel">
                 <h3>🏆 Live Leaderboard</h3>
                 <table class="data-table" style="font-size: 0.8rem;">
@@ -43,31 +41,29 @@
                 </table>
             </div>
 
-            <!-- Gamelog -->
+            <!-- Row 4 Left: Instruction -->
+            <div class="instruction-box">
+                <h3>📖 Instruction</h3>
+                <p style="font-size: 0.85rem; color: var(--text-secondary);">Roll the dice first, then move your piece on the board. Scan the QR card on the tile you land on to trigger an event.</p>
+            </div>
+
+            <!-- Row 4 Right: Gamelog -->
             <div class="gamelog-panel">
                 <h3>📋 Gamelog</h3>
-                <div style="font-size: 0.8rem; color: var(--text-muted);">
+                <div id="gamelog-content" style="font-size: 0.8rem; color: var(--text-muted); max-height: 200px; overflow-y: auto;">
                     <p>Game started. Good luck, Code Walker!</p>
                 </div>
             </div>
 
-            <!-- Instruction -->
-            <div class="instruction-box">
-                <h3>📖 Instruction</h3>
-                <p style="font-size: 0.85rem; color: var(--text-secondary);">Roll your physical die and move your piece on the board. When you land on a special tile, scan the QR card to trigger an event.</p>
+            <!-- Row 5 Left: Action Buttons -->
+            <div class="action-buttons" style="display: flex; flex-direction: column; gap: 10px;">
+                <a href="/game/scan/<%= roomCode %>" class="btn btn-primary" id="btn-scan-qr">📷 Scan QR</a>
+                <a href="/" class="btn btn-outline" id="btn-leave-bottom">🚪 Leave Game</a>
             </div>
-
-            <!-- Action Buttons -->
-            <div class="gameplay-actions">
-                <div id="event-display" class="instruction-box" style="margin-bottom: 10px; background: rgba(26, 115, 232, 0.1); border: 1px solid var(--primary-color);">
-                    <strong style="color: var(--primary-color);">🎭 Current Event:</strong> <span>Waiting for scan...</span>
-                </div>
-                
-                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                    <a href="/game/scan/<%= roomCode %>" class="btn btn-primary" id="btn-scan-qr" style="flex: 1;">📷 Scan QR</a>
-                    <button class="btn btn-secondary" id="btn-end-turn" onclick="endTurn()" style="flex: 1;">⏭️ End Turn</button>
-                    <a href="/" class="btn btn-outline" id="btn-leave-bottom">🚪 Leave Game</a>
-                </div>
+            
+            <!-- Row 5 Right: Event Display -->
+            <div id="event-display" class="event-display instruction-box" style="background: rgba(26, 115, 232, 0.1); border: 1px solid var(--primary-color); margin: 0;">
+                <strong style="color: var(--primary-color);">🎭 Current Event:</strong> <span>Waiting for scan...</span>
             </div>
         </div>
     </div>
@@ -79,21 +75,27 @@
     const roomCode = '<%= roomCode %>';
     const myUsername = '<%= user ? user.username : "Player" %>';
     
-    // Join the socket room
-    socket.emit('join-room', { roomCode, username: myUsername });
-    
-    // Request current state immediately
-    socket.emit('get-game-state', roomCode);
+    let currentTurn = -1;
+    let hasRolledThisTurn = false;
+
+    // Wrap in connect event to handle both initial load AND automatic reconnects (e.g. mobile screen wake)
+    socket.on('connect', () => {
+        // Join the socket room
+        socket.emit('join-room', { roomCode, username: myUsername });
+        
+        // Request current state immediately
+        socket.emit('get-game-state', roomCode);
+    });
 
     // Check if we just came back from answering a question (URL params)
     const urlParams = new URLSearchParams(window.location.search);
     const ansResult = urlParams.get('result');
     const ansMsg = urlParams.get('msg');
     if (ansResult) {
-        const gamelog = document.querySelector('.gamelog-panel div');
+        const gamelog = document.getElementById('gamelog-content');
         const newLog = document.createElement('p');
         
-        let displayMessage = ansMsg ? ansMsg : (ansResult === 'correct' ? `You answered correctly! +${ansPoints} pts 🎉` : `Wrong answer. 0 pts ❌`);
+        let displayMessage = ansMsg ? ansMsg : (ansResult === 'correct' ? `You answered correctly! 🎉` : `Wrong answer. ❌`);
         
         if (ansResult === 'correct') {
             newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${displayMessage}`;
@@ -104,32 +106,60 @@
             newLog.style.color = 'var(--danger-color)';
             document.querySelector('#event-display span').innerHTML = displayMessage;
         }
-        gamelog.prepend(newLog);
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
+
+        // IMPORTANT: Clear rolled state so the next turn starts fresh
+        // The turn was already advanced on the server when the answer was submitted.
+        sessionStorage.removeItem(`hasRolled_${roomCode}_${myUsername}`);
+        sessionStorage.removeItem(`diceResult_${roomCode}_${myUsername}`);
+        hasRolledThisTurn = false;
+        currentTurn = -1; // Force a full UI refresh on next game-state-sync
+
         // Clean URL
         window.history.replaceState({}, '', `/game/play/${roomCode}`);
     }
 
     function updateUI(players, currentTurnIndex, boss) {
-        // Update Boss Status
-        if (boss) {
-            document.getElementById('boss-hp-text').textContent = `${boss.hp}/100`;
-            document.getElementById('boss-hp-bar').style.width = `${Math.max(0, boss.hp)}%`;
-            
-            if (boss.hp <= 0) {
-                alert("🎉 VICTORY! Syntax Terror has been defeated! Redirecting to Leaderboard...");
-                window.location.href = '/leaderboard';
-                return;
+        const turnPlayer = players[currentTurnIndex];
+        const isMyTurn = (turnPlayer && turnPlayer.username === myUsername);
+
+        if (currentTurn !== currentTurnIndex) {
+            currentTurn = currentTurnIndex;
+            hasRolledThisTurn = false;
+            document.getElementById('dice-result').textContent = '-';
+            if (isMyTurn) {
+                // Clear any leftover state when a fresh turn starts
+                sessionStorage.removeItem(`hasRolled_${roomCode}_${myUsername}`);
+                sessionStorage.removeItem(`diceResult_${roomCode}_${myUsername}`);
+            }
+        }
+        
+        // Recover state from sessionStorage in case of page reload or back button navigation
+        if (isMyTurn && sessionStorage.getItem(`hasRolled_${roomCode}_${myUsername}`) === 'true') {
+            hasRolledThisTurn = true;
+            const savedDice = sessionStorage.getItem(`diceResult_${roomCode}_${myUsername}`);
+            if (savedDice) {
+                document.getElementById('dice-result').textContent = savedDice;
             }
         }
 
-        // Update My Player Status
+        // Update My Player Status (Hearts)
         const myPlayer = players.find(p => p.username === myUsername);
         if (myPlayer) {
-            document.getElementById('player-hp-text').textContent = `${myPlayer.hp}/100`;
-            document.getElementById('player-hp-bar').style.width = `${Math.max(0, myPlayer.hp)}%`;
+            let heartsHtml = '';
+            const currentHp = Math.max(0, Math.min(5, myPlayer.hp));
+            for(let i=0; i<currentHp; i++) heartsHtml += '❤️';
+            for(let i=currentHp; i<5; i++) heartsHtml += '🤍';
+            
+            const hpElement = document.getElementById('player-hp-hearts');
+            hpElement.innerHTML = heartsHtml;
+            
             if (myPlayer.hp <= 0) {
                 // Handle Game Over for this player
-                document.getElementById('player-hp-bar').style.background = 'var(--text-muted)';
+                hpElement.style.filter = 'grayscale(100%)';
+            } else {
+                hpElement.style.filter = 'none';
             }
         }
 
@@ -148,16 +178,14 @@
         });
 
         // Update Turn Indicator
-        const turnPlayer = players[currentTurnIndex];
         const turnDiv = document.getElementById('current-turn');
         
         if (turnPlayer) {
             turnDiv.innerHTML = `🎲 Current Turn: <strong>${turnPlayer.username}</strong>`;
             
             // Lock/Unlock buttons based on turn
-            const isMyTurn = (turnPlayer.username === myUsername);
             const btnScan = document.getElementById('btn-scan-qr');
-            const btnEnd = document.getElementById('btn-end-turn');
+            const btnRoll = document.getElementById('btn-roll-dice');
             const myPlayer = players.find(p => p.username === myUsername);
             const isDead = myPlayer && myPlayer.hp <= 0;
             
@@ -167,20 +195,31 @@
                 turnDiv.style.color = 'white';
                 btnScan.style.pointerEvents = 'none';
                 btnScan.style.opacity = '0.5';
-                btnEnd.disabled = true;
-                btnEnd.style.opacity = '0.5';
+                btnRoll.disabled = true;
+                btnRoll.style.opacity = '0.5';
             } else if (isMyTurn) {
-                btnScan.style.pointerEvents = 'auto';
-                btnScan.style.opacity = '1';
-                btnEnd.disabled = false;
-                btnEnd.style.opacity = '1';
+                // Enable if it's their turn and they haven't rolled yet
+                if (!hasRolledThisTurn) {
+                    btnRoll.disabled = false;
+                    btnRoll.style.opacity = '1';
+                    // Must roll dice before scanning
+                    btnScan.style.pointerEvents = 'none';
+                    btnScan.style.opacity = '0.5';
+                } else {
+                    btnRoll.disabled = true;
+                    btnRoll.style.opacity = '0.5';
+                    // After rolling, unlock scan
+                    btnScan.style.pointerEvents = 'auto';
+                    btnScan.style.opacity = '1';
+                }
+                
                 turnDiv.style.background = 'var(--success-color)';
                 turnDiv.style.color = 'white';
             } else {
                 btnScan.style.pointerEvents = 'none';
                 btnScan.style.opacity = '0.5';
-                btnEnd.disabled = true;
-                btnEnd.style.opacity = '0.5';
+                btnRoll.disabled = true;
+                btnRoll.style.opacity = '0.5';
                 turnDiv.style.background = 'var(--bg-surface)';
                 turnDiv.style.color = 'var(--text-color)';
             }
@@ -191,34 +230,116 @@
         updateUI(data.players, data.currentTurnIndex, data.boss);
     });
 
-    function endTurn() {
-        if(confirm("Are you sure you want to end your turn?")) {
-            socket.emit('turn-update', { roomCode: roomCode, action: 'end_turn', player: myUsername });
-        }
+    function rollDice() {
+        if(document.getElementById('btn-roll-dice').disabled) return;
+        
+        hasRolledThisTurn = true;
+        
+        // Disable the button to prevent multiple rolls per turn
+        const btnRoll = document.getElementById('btn-roll-dice');
+        btnRoll.disabled = true;
+        btnRoll.style.opacity = '0.5';
+        
+        // Unlock Scan QR button now that dice has been rolled
+        const btnScan = document.getElementById('btn-scan-qr');
+        btnScan.style.pointerEvents = 'auto';
+        btnScan.style.opacity = '1';
+        
+        // Generate number 1-12
+        const result = Math.floor(Math.random() * 12) + 1;
+        
+        // Save state in session storage so it survives Back button or refresh
+        sessionStorage.setItem(`hasRolled_${roomCode}_${myUsername}`, 'true');
+        sessionStorage.setItem(`diceResult_${roomCode}_${myUsername}`, result.toString());
+        
+        socket.emit('dice-result', { roomCode: roomCode, player: myUsername, result: result });
     }
+
+    socket.on('dice-result', (data) => {
+        const resultDiv = document.getElementById('dice-result');
+        resultDiv.textContent = data.result;
+        
+        const turnDiv = document.getElementById('current-turn');
+        
+        // Log the roll
+        const gamelog = document.getElementById('gamelog-content');
+        const newLog = document.createElement('p');
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: 🎲 ${data.player} rolled a <strong>${data.result}</strong>`;
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
+    });
 
     // Listen for turn updates to show in gamelog and update UI
     socket.on('turn-update', (data) => {
-        const gamelog = document.querySelector('.gamelog-panel div');
+        const gamelog = document.getElementById('gamelog-content');
         const newLog = document.createElement('p');
-        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.player} ended their turn.`;
-        gamelog.prepend(newLog); // Put new logs at top
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.player}'s turn ended. Next player's turn!`;
+        newLog.style.color = 'var(--accent-light)';
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
         
         if (data.players) {
             updateUI(data.players, data.currentTurnIndex);
         }
     });
 
+    // Listen for event type broadcast (shows HEAL, TRAP, etc. on other player's screen)
+    socket.on('event-triggered', (data) => {
+        const eventDisplay = document.querySelector('#event-display span');
+        const eventIcons = { 'HEAL': '💚', 'MONSTER': '⚔️', 'TREASURE': '💎', 'TRAP': '🪤', 'NORMAL': '❓', 'BOSS': '👹' };
+        const icon = eventIcons[data.tileType] || '🎭';
+        eventDisplay.innerHTML = `${icon} ${data.player} triggered: <strong>${data.tileType}</strong>`;
+        eventDisplay.style.fontWeight = 'bold';
+        
+        const gamelog = document.getElementById('gamelog-content');
+        const newLog = document.createElement('p');
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${icon} ${data.player} triggered a <strong>${data.tileType}</strong> event!`;
+        newLog.style.color = 'var(--primary-color)';
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
+    });
+
     // Listen for question results to update Event Display and Leaderboard
     socket.on('question-result', (data) => {
         const eventDisplay = document.querySelector('#event-display span');
-        eventDisplay.innerHTML = `${data.player} scored ${data.points} points!`;
+        eventDisplay.innerHTML = `${data.player}: ${data.eventMessage}`;
         eventDisplay.style.fontWeight = 'bold';
         
-        const gamelog = document.querySelector('.gamelog-panel div');
+        const gamelog = document.getElementById('gamelog-content');
         const newLog = document.createElement('p');
-        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.player} answered a question correctly and got +${data.points} pts.`;
-        gamelog.prepend(newLog);
+        if (data.correct) {
+            newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ✅ ${data.player} — ${data.eventMessage}`;
+            newLog.style.color = 'var(--success-color)';
+        } else {
+            newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ❌ ${data.player} — ${data.eventMessage}`;
+            newLog.style.color = 'var(--danger-color)';
+        }
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
+    });
+
+    // Listen for game over
+    socket.on('game-over', (data) => {
+        // Store standings in sessionStorage so game-result page can read them
+        sessionStorage.setItem('gameOverData', JSON.stringify(data));
+        
+        // Small delay to let the question-result render first
+        setTimeout(() => {
+            window.location.href = `/game/gameover/${roomCode}`;
+        }, 2000);
+    });
+
+    // Handle Leave Game
+    document.querySelectorAll('#btn-leave, #btn-leave-bottom').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (confirm("Are you sure you want to leave the game?")) {
+                socket.emit('leave-room', { roomCode: roomCode, username: myUsername });
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 100);
+            }
+        });
     });
 </script>
 

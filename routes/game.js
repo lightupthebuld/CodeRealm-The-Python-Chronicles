@@ -35,28 +35,49 @@ router.post('/scan/:code', requireLogin, async (req, res) => {
   const { eventcode } = req.body;
   
   try {
+    const room = rooms[req.params.code];
+    const currentPlayer = room && room.players[room.currentTurnIndex];
+    if (!room || room.status !== 'playing' || !currentPlayer || currentPlayer.username !== req.session.user.username) {
+      req.session.error = 'Only the current player can scan a QR card during an active game.';
+      return res.redirect(`/game/play/${req.params.code}`);
+    }
     let query = 'SELECT questionid FROM Question';
     let params = [];
     
     // Determine tile type from QR Code
     let tileType = 'NORMAL'; // Default
     if (eventcode.startsWith('TILE-')) {
-      tileType = eventcode.split('-')[1]; // e.g. NORMAL, MONSTER, TREASURE, BOSS
+      tileType = eventcode.split('-')[1]; // e.g. NORMAL, MONSTER, TREASURE, BOSS, EVENT
+    } else if (eventcode === 'EVENT') {
+      tileType = 'EVENT';
     }
     
-    // Optional: map tile type to question difficulty
-    if (tileType === 'BOSS') {
-      query += ' WHERE difficulty = "hard"';
-    } else if (tileType === 'NORMAL' || tileType === 'TREASURE') {
-      query += ' WHERE difficulty = "easy" OR difficulty = "medium"';
+    // If it's an EVENT tile, randomly select a specific event type
+    if (tileType === 'EVENT') {
+      const eventTypes = ['HEAL', 'MONSTER', 'TREASURE', 'TRAP'];
+      tileType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
     }
     
+    // Optional: no difficulty filtering as requested
     query += ' ORDER BY RAND() LIMIT 1';
     
     const [rows] = await pool.query(query, params);
     
     if (rows.length > 0) {
-      req.session.success = `Landed on ${tileType} tile!`;
+      room.activeQuestion = {
+        username: req.session.user.username,
+        questionid: rows[0].questionid,
+        tileType
+      };
+      req.session.success = `Triggered a random event: ${tileType}!`;
+      
+      // Broadcast event type to all players in the room
+      const io = req.app.get('io');
+      io.to(req.params.code).emit('event-triggered', {
+        player: req.session.user.username,
+        tileType: tileType
+      });
+      
       // Redirect to the question display view with the drawn ID and tile type
       res.redirect(`/game/question/${req.params.code}?qId=${rows[0].questionid}&tile=${tileType}`);
     } else {
@@ -108,38 +129,62 @@ router.get('/question/:code', requireLogin, async (req, res) => {
 
 // Slide 17: Submit Answer API & DB Score Sync
 router.post('/submit-answer/:code', requireLogin, async (req, res) => {
-  const { questionid, answerid, tileType } = req.body;
+  const { questionid, answerid } = req.body;
   const userId = req.session.user.userid;
   const username = req.session.user.username;
   const roomCode = req.params.code;
   
   try {
+    const room = rooms[roomCode];
+    const activeQuestion = room && room.activeQuestion;
+    if (!activeQuestion || activeQuestion.username !== username || Number(activeQuestion.questionid) !== Number(questionid)) {
+      return res.status(400).json({ error: 'This question is no longer active for you.' });
+    }
+    const tileType = activeQuestion.tileType;
+    room.activeQuestion = null;
     let isCorrect = false;
     let points = 0;
     
-    // 1. Check if the answer is correct
-    if (answerid) {
-        const [ans] = await pool.query('SELECT iscorrect FROM Answer WHERE answerid = ? AND questionid = ?', [answerid, questionid]);
-        if (ans.length > 0 && ans[0].iscorrect === 1) {
-            isCorrect = true;
+    // 1. Check if the answer is correct and fetch details for review
+    let correctAnswerText = '';
+    let chosenAnswerText = 'Timeout / No Answer';
+    let questionText = '';
+
+    if (questionid) {
+        const [q] = await pool.query('SELECT questiontext FROM Question WHERE questionid = ?', [questionid]);
+        if (q.length > 0) questionText = q[0].questiontext;
+        
+        const [answers] = await pool.query('SELECT answerid, answertext, iscorrect FROM Answer WHERE questionid = ?', [questionid]);
+        
+        for (const ans of answers) {
+            if (ans.iscorrect === 1) {
+                correctAnswerText = ans.answertext;
+            }
+            if (ans.answerid == answerid) {
+                chosenAnswerText = ans.answertext;
+                if (ans.iscorrect === 1) isCorrect = true;
+            }
         }
     }
 
     // 2. Calculate Rewards and Penalties based on Tile Type
     let scoreChange = 0;
     let hpChange = 0;
-    let bossHpChange = 0;
     let eventMessage = "";
 
     if (isCorrect) {
-        if (tileType === 'NORMAL') { scoreChange = 10; hpChange = 5; eventMessage = "Correct! +10 Score, +5 HP"; }
+        if (tileType === 'NORMAL') { scoreChange = 10; eventMessage = "Correct! +10 Score"; }
         else if (tileType === 'MONSTER') { scoreChange = 10; eventMessage = "Monster Defeated! +10 Score"; }
         else if (tileType === 'TREASURE') { scoreChange = 20; eventMessage = "Treasure Found! +20 Score"; }
-        else if (tileType === 'BOSS') { bossHpChange = -20; eventMessage = "Boss hit! -20 Boss HP"; }
+        else if (tileType === 'BOSS') { scoreChange = 30; eventMessage = "Boss hit! +30 Score"; }
+        else if (tileType === 'HEAL') { hpChange = 1; eventMessage = "Heal successful! +1 Heart"; }
+        else if (tileType === 'TRAP') { scoreChange = 5; eventMessage = "Trap evaded! +5 Score"; }
     } else {
-        if (tileType === 'NORMAL' || tileType === 'MONSTER') { hpChange = -10; eventMessage = "Wrong! -10 HP"; }
-        else if (tileType === 'BOSS') { hpChange = -15; eventMessage = "Boss attacks! -15 HP"; }
+        if (tileType === 'NORMAL' || tileType === 'MONSTER') { hpChange = -1; eventMessage = "Wrong! -1 Heart"; }
+        else if (tileType === 'BOSS') { hpChange = -1; eventMessage = "Boss attacks! -1 Heart"; }
         else if (tileType === 'TREASURE') { eventMessage = "Wrong! Treasure lost."; }
+        else if (tileType === 'HEAL') { eventMessage = "Heal failed! No Hearts gained."; }
+        else if (tileType === 'TRAP') { hpChange = -2; eventMessage = "Trap triggered! -2 Hearts"; }
     }
 
     // 3. Update in-memory room stats (Live Game State)
@@ -147,26 +192,90 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
         const player = rooms[roomCode].players.find(p => p.username === username);
         if (player) {
             player.score += scoreChange;
-            player.hp = Math.max(0, player.hp + hpChange);
-        }
-        
-        if (rooms[roomCode].boss) {
-            rooms[roomCode].boss.hp = Math.max(0, rooms[roomCode].boss.hp + bossHpChange);
+            // Cap HP at 5 and floor at 0
+            player.hp = Math.min(5, Math.max(0, player.hp + hpChange));
         }
         
         // Broadcast updated state to ALL players
         const io = req.app.get('io');
-        io.to(roomCode).emit('game-state-sync', {
-            players: rooms[roomCode].players,
-            currentTurnIndex: rooms[roomCode].currentTurnIndex,
-            boss: rooms[roomCode].boss
-        });
+        
+        // Broadcast question result first
         io.to(roomCode).emit('question-result', {
             player: username,
             points: scoreChange,
             correct: isCorrect,
             eventMessage: eventMessage
         });
+        
+        // Broadcast game state sync (so others see HP changes immediately)
+        io.to(roomCode).emit('game-state-sync', {
+            players: rooms[roomCode].players,
+            currentTurnIndex: rooms[roomCode].currentTurnIndex,
+            boss: rooms[roomCode].boss
+        });
+        
+        // Check game-over condition: if only 1 alive player remains, end the game
+        const alivePlayers = rooms[roomCode].players.filter(p => p.hp > 0);
+        const totalPlayers = rooms[roomCode].players.length;
+        
+        if (totalPlayers >= 2 && alivePlayers.length <= 1) {
+            // Game Over! Build final standings sorted by score
+            const finalStandings = [...rooms[roomCode].players]
+                .sort((a, b) => b.score - a.score)
+                .map((p, i) => ({
+                    rank: i + 1,
+                    username: p.username,
+                    score: p.score,
+                    alive: p.hp > 0
+                }));
+            
+            io.to(roomCode).emit('game-over', {
+                roomCode: roomCode,
+                standings: finalStandings,
+                reason: alivePlayers.length === 1 
+                    ? `${alivePlayers[0].username} is the last one standing!`
+                    : 'All players have been eliminated!'
+            });
+
+            // Broadcast final game state sync
+            io.to(roomCode).emit('game-state-sync', {
+                players: rooms[roomCode].players,
+                currentTurnIndex: rooms[roomCode].currentTurnIndex,
+                boss: rooms[roomCode].boss
+            });
+        } else {
+            // Game continues: auto-advance turn to next alive player
+            const room = rooms[roomCode];
+            const playerCount = room.players.length;
+            if (playerCount > 0) {
+                let nextIndex = (room.currentTurnIndex + 1) % playerCount;
+                // Skip dead players (hp <= 0)
+                let checked = 0;
+                while (checked < playerCount) {
+                    if (room.players[nextIndex].hp > 0) break;
+                    nextIndex = (nextIndex + 1) % playerCount;
+                    checked++;
+                }
+                room.currentTurnIndex = nextIndex;
+            }
+
+            // Broadcast the turn change
+            io.to(roomCode).emit('turn-update', {
+                roomCode: roomCode,
+                action: 'end_turn',
+                player: username,
+                autoEnded: true,
+                currentTurnIndex: rooms[roomCode].currentTurnIndex,
+                players: rooms[roomCode].players
+            });
+
+            // Broadcast full game state sync
+            io.to(roomCode).emit('game-state-sync', {
+                players: rooms[roomCode].players,
+                currentTurnIndex: rooms[roomCode].currentTurnIndex,
+                boss: rooms[roomCode].boss
+            });
+        }
     }
 
     // 4. Save to Database for Global Leaderboard (Only Score matters here)
@@ -186,7 +295,17 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
         }
     }
 
-    res.json({ correct: isCorrect, points: scoreChange, hpChange: hpChange, eventMessage: eventMessage });
+    const didAnswer = !!answerid;
+    res.json({ 
+        correct: isCorrect, 
+        points: scoreChange, 
+        hpChange: hpChange, 
+        eventMessage: eventMessage,
+        questionText: questionText,
+        correctAnswerText: didAnswer ? correctAnswerText : null,
+        chosenAnswerText: didAnswer ? chosenAnswerText : 'Timeout / No Answer',
+        didAnswer: didAnswer
+    });
   } catch (error) {
     console.error('Answer submission error:', error);
     res.status(500).json({ error: 'Server error', correct: false, points: 0 });
@@ -201,6 +320,12 @@ router.get('/result/:code', requireLogin, (req, res) => {
 // Slide 18: Game Result
 router.get('/gameover/:code', requireLogin, (req, res) => {
   res.render('game/game-result', { title: 'Game Result - CodeRealm', roomCode: req.params.code });
+});
+
+
+// Review Answer Route
+router.get('/review/:code', requireLogin, (req, res) => {
+  res.render('game/review', { title: 'Answer Review - CodeRealm', roomCode: req.params.code });
 });
 
 module.exports = router;

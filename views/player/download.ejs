@@ -12,37 +12,26 @@
             <div class="download-card" style="text-align: center;">
                 <h3>🗺️ Game Map</h3>
                 <div class="download-preview" style="margin: 10px auto;">
-                    <span class="preview-icon">🗺️</span>
+                    <img src="<%= components.mapImage %>" alt="CodeRealm Game Map" style="max-width: 100%; max-height: 400px; border-radius: 8px; border: 2px solid var(--primary-color);">
                 </div>
                 <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 10px;">Download the physical game board map.</p>
-                <a href="#" class="btn btn-primary" id="btn-download-map">📥 Download Map</a>
+                <a href="<%= components.mapImage %>" download="CodeRealm_Map.png" class="btn btn-primary" id="btn-download-map">📥 Download Map</a>
             </div>
 
             <div class="download-card" style="text-align: center;">
                 <h3>🃏 QR Cards (Printable)</h3>
-                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">Print these generic QR cards. The game will randomly draw a question from the database when scanned.</p>
+                <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 20px;">Print these QR cards and place them on the board tiles. Scan them in-game to trigger events.</p>
                 
                 <div style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;">
-                    <!-- Random Encounter -->
-                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-                        <h4 style="color: black; margin-bottom: 5px;">Random Encounter</h4>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-RANDOM" alt="Random QR" />
-                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-RANDOM</p>
+                    <% components.qrCards.forEach(card => { %>
+                    <div style="background: var(--bg-surface); padding: 15px; border-radius: 8px; border: 1px solid var(--border); text-align: center; flex: 1; min-width: 200px;">
+                        <h4 style="color: var(--text-color); margin-bottom: 10px;"><%= card.title %></h4>
+                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<%= encodeURIComponent(card.data) %>" alt="<%= card.title %> QR" style="display: block; margin: 0 auto; margin-bottom: 10px;" />
+                        <p style="color: var(--text-muted); font-size: 0.75rem;"><%= card.description %></p>
+                        <p style="color: rgba(255, 255, 255, 0.4); font-size: 0.7rem; margin-bottom: 10px;">Data: <%= card.data %></p>
+                        <a href="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=<%= encodeURIComponent(card.data) %>" target="_blank" download="QR_<%= card.id %>.png" class="btn btn-primary btn-sm" style="padding: 5px 10px; font-size: 0.8rem;">📥 Download</a>
                     </div>
-
-                    <!-- Easy Encounter -->
-                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-                        <h4 style="color: black; margin-bottom: 5px;">Easy Encounter</h4>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-EASY" alt="Easy QR" />
-                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-EASY</p>
-                    </div>
-
-                    <!-- Hard Encounter -->
-                    <div style="background: white; padding: 10px; border-radius: 8px; border: 1px solid #ddd;">
-                        <h4 style="color: black; margin-bottom: 5px;">Hard Encounter</h4>
-                        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EVENT-HARD" alt="Hard QR" />
-                        <p style="color: #666; font-size: 0.8rem; margin-top: 5px;">Data: EVENT-HARD</p>
-                    </div>
+                    <% }) %>
                 </div>
             </div>
         </div>

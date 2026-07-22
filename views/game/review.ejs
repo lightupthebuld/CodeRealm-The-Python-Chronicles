@@ -1,0 +1,113 @@
+<%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
+<%- include('../partials/navbar') %>
+
+<main class="main-content">
+    <div class="container" style="padding-top: var(--space-xl);">
+        <div class="page-header" style="justify-content: center; border: none; flex-direction: column; text-align: center;">
+            <h1 id="review-title">📝 Answer Review</h1>
+        </div>
+
+        <div class="question-card animate-slide-up" style="margin-bottom: var(--space-xl);">
+            <div id="review-result-icon" style="font-size: 3rem; text-align: center; margin-bottom: 10px;"></div>
+            <h2 id="review-result-title" style="text-align: center; margin-bottom: 20px;"></h2>
+            
+            <p id="review-event-msg" style="text-align: center; font-weight: bold; margin-bottom: 20px; font-size: 1.1rem; color: var(--accent-light);"></p>
+
+            <div style="background: var(--bg-surface); padding: var(--space-lg); border-radius: var(--radius-md); border: 1px solid var(--border); margin-bottom: 20px;">
+                <h4 style="color: var(--text-muted); margin-bottom: 10px;">Question:</h4>
+                <p id="review-question" style="font-size: 1rem; line-height: 1.5;"></p>
+            </div>
+            
+            <div style="background: rgba(255, 71, 87, 0.1); border: 1px solid var(--danger-color); padding: var(--space-lg); border-radius: var(--radius-md); margin-bottom: 20px;" id="chosen-answer-box">
+                <h4 style="color: var(--danger-color); margin-bottom: 10px;">Your Answer:</h4>
+                <p id="review-chosen" style="font-size: 1rem; line-height: 1.5; color: white;"></p>
+            </div>
+
+            <div id="correct-answer-box" style="background: rgba(46, 213, 115, 0.1); border: 1px solid var(--success-color); padding: var(--space-lg); border-radius: var(--radius-md);">
+                <h4 style="color: var(--success-color); margin-bottom: 10px;">Correct Answer:</h4>
+                <p id="review-correct" style="font-size: 1rem; line-height: 1.5; color: white;"></p>
+            </div>
+        </div>
+
+        <div style="text-align: center; margin-bottom: 40px;">
+            <button id="btn-continue" class="btn btn-primary btn-lg" style="width: 100%; max-width: 300px;">Back to Board</button>
+        </div>
+    </div>
+</main>
+
+<script>
+    const roomCode = '<%= roomCode %>';
+    
+    document.addEventListener('DOMContentLoaded', () => {
+        const reviewDataStr = sessionStorage.getItem('reviewData_' + roomCode);
+        if (!reviewDataStr) {
+            // If someone lands here directly, safely send them back
+            window.location.href = `/game/play/${roomCode}`;
+            return;
+        }
+        
+        const reviewData = JSON.parse(reviewDataStr);
+        
+        // Populate Data
+        document.getElementById('review-question').textContent = reviewData.questionText || 'No question text found.';
+        document.getElementById('review-chosen').textContent = reviewData.chosenAnswerText || 'Timeout / No Answer';
+        document.getElementById('review-event-msg').textContent = reviewData.eventMessage || '';
+        
+        const icon = document.getElementById('review-result-icon');
+        const title = document.getElementById('review-result-title');
+        const chosenBox = document.getElementById('chosen-answer-box');
+        const correctBox = document.getElementById('correct-answer-box');
+        
+        if (!reviewData.didAnswer) {
+            // Player timed out — don't reveal the correct answer
+            icon.textContent = '⏰';
+            title.textContent = "Time's Up!";
+            title.style.color = 'var(--accent-light)';
+            chosenBox.querySelector('h4').textContent = 'You did not answer';
+            chosenBox.querySelector('h4').style.color = 'var(--accent-light)';
+            chosenBox.style.background = 'rgba(255, 165, 0, 0.1)';
+            chosenBox.style.border = '1px solid orange';
+            if (correctBox) correctBox.style.display = 'none';
+        } else if (reviewData.correct) {
+            icon.textContent = '✅';
+            title.textContent = 'Correct!';
+            title.style.color = 'var(--success-light)';
+            
+            // If correct, chosen is the same as correct, so we can highlight it
+            chosenBox.style.background = 'rgba(46, 213, 115, 0.1)';
+            chosenBox.style.border = '1px solid var(--success-color)';
+            chosenBox.querySelector('h4').style.color = 'var(--success-color)';
+            if (correctBox) {
+                document.getElementById('review-correct').textContent = reviewData.correctAnswerText || '';
+            }
+        } else {
+            icon.textContent = '❌';
+            title.textContent = 'Wrong!';
+            title.style.color = 'var(--danger-light)';
+            if (correctBox) {
+                document.getElementById('review-correct').textContent = reviewData.correctAnswerText || '';
+            }
+        }
+    });
+
+    document.getElementById('btn-continue').addEventListener('click', () => {
+        const btn = document.getElementById('btn-continue');
+        btn.disabled = true;
+        btn.textContent = 'Returning...';
+        
+        // Read event message to pass to gamelog in URL
+        const reviewDataStr = sessionStorage.getItem('reviewData_' + roomCode);
+        let params = '';
+        if (reviewDataStr) {
+            const reviewData = JSON.parse(reviewDataStr);
+            params = `?result=${reviewData.correct ? 'correct' : 'wrong'}&points=${reviewData.points}&msg=${encodeURIComponent(reviewData.eventMessage)}`;
+        }
+        
+        // Remove review data
+        sessionStorage.removeItem('reviewData_' + roomCode);
+        
+        window.location.href = `/game/play/${roomCode}${params}`;
+    });
+</script>
+
+<%- include('../partials/footer', { extraJS: [] }) %>

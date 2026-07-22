@@ -1,0 +1,23 @@
+{
+    "mapImage": "/images/coderealm_map.png",
+    "qrCards": [
+        {
+            "id": "event_random",
+            "title": "🎭 Random Event",
+            "data": "TILE-EVENT",
+            "description": "Randomly triggers: Heal, Monster, Treasure, or Trap"
+        },
+        {
+            "id": "event_monster",
+            "title": "⚔️ Monster Encounter",
+            "data": "TILE-MONSTER",
+            "description": "Correct: +10 Score | Wrong: -1 Heart"
+        },
+        {
+            "id": "event_normal",
+            "title": "❓ Normal Question",
+            "data": "TILE-NORMAL",
+            "description": "Correct: +10 Score | Wrong: -1 Heart"
+        }
+    ]
+}

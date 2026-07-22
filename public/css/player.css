@@ -155,18 +155,53 @@
 /* Gameplay layout */
 .gameplay-grid {
   display: grid;
-  grid-template-columns: 280px 1fr 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: 1fr 1fr;
+  grid-template-areas:
+    "dice      ."
+    "turn      turn"
+    "status    leaderboard"
+    "instruct  gamelog"
+    "btnleft   eventright";
   gap: var(--space-md);
-  min-height: calc(100vh - 140px);
+}
+
+.dice-status {
+  grid-area: dice;
+}
+
+.current-turn {
+  grid-area: turn;
 }
 
 .char-status {
-  grid-row: 1 / 3;
+  grid-area: status;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: var(--space-lg);
+}
+
+.leaderboard-panel {
+  grid-area: leaderboard;
+}
+
+.instruction-box:not(#event-display) {
+  grid-area: instruct;
+}
+
+.gamelog-panel {
+  grid-area: gamelog;
+}
+
+.action-buttons {
+  grid-area: btnleft;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+}
+
+.event-display {
+  grid-area: eventright;
 }
 
 .char-status h3 {
@@ -213,7 +248,6 @@
 }
 
 .instruction-box {
-  grid-column: 1;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -227,7 +261,6 @@
 }
 
 .current-turn {
-  grid-column: 2 / 4;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -278,19 +311,27 @@
 }
 
 .question-content {
-  display: grid;
-  grid-template-columns: 1fr 180px;
-  gap: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
   margin-bottom: var(--space-xl);
 }
 
-.question-text {
-  font-size: 1.1rem;
-  line-height: 1.7;
-  color: var(--text-primary);
-  min-height: 100px;
+.question-header {
   display: flex;
   align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.question-text {
+  font-size: 1.15rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  min-height: 60px;
+  display: flex;
+  align-items: center;
+  padding: var(--space-md) 0;
 }
 
 .question-picture {
@@ -537,60 +578,23 @@
     height: 180px;
   }
 
-  /* Gameplay: 2-column grid (Slide 14 mobile) */
+  /* Gameplay: 2-column grid (tablet) */
   .gameplay-grid {
     grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto;
+    grid-template-areas:
+      "dice      ."
+      "turn      turn"
+      "status    leaderboard"
+      "instruct  gamelog"
+      "btnleft   eventright";
     gap: var(--space-sm);
   }
 
-  .current-turn {
-    grid-column: 1 / -1;
-    order: 1;
-  }
 
-  .char-status {
-    grid-row: auto;
-    grid-column: 1;
-    order: 2;
-  }
 
-  .leaderboard-panel {
-    grid-column: 2;
-    order: 3;
-  }
-
-  .instruction-box {
-    grid-column: 1;
-    order: 4;
-  }
-
-  .gamelog-panel {
-    grid-column: 2;
-    order: 5;
-  }
-
-  .gameplay-actions {
-    grid-column: 1 / -1;
-    flex-wrap: wrap;
-    order: 6;
-  }
-
-  .gameplay-actions .btn {
-    flex: 1 1 calc(50% - var(--space-sm));
-    min-width: calc(50% - var(--space-sm));
-    padding: 0.75rem;
-    font-size: 0.85rem;
-  }
-
-  /* Event Display takes full width */
-  .gameplay-actions .btn:first-child {
-    flex: 1 1 100%;
-  }
-
-  /* Question: single column, timer on top (Slide 16 mobile) */
+  /* Question: mobile adjustments */
   .question-content {
-    grid-template-columns: 1fr;
+    gap: var(--space-sm);
   }
 
   .question-picture {
@@ -676,6 +680,13 @@
 
   /* Gameplay: tighter spacing */
   .gameplay-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      "dice      ."
+      "turn      turn"
+      "status    leaderboard"
+      "instruct  gamelog"
+      "btnleft   eventright";
     gap: var(--space-xs);
   }
 

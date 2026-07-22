@@ -1,5 +1,5 @@
 /* ========================================
-   CodeRealm: The OOP Chronicles
+   CodeRealm: Python Classes and Objects
    Global Design System
    ======================================== */
 
@@ -472,12 +472,14 @@ select.form-control {
 .navbar-brand {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: var(--space-xs);
   font-family: var(--font-heading);
-  font-size: 1.3rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: var(--text-primary);
   text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .navbar-brand span {
@@ -490,17 +492,18 @@ select.form-control {
 .navbar-nav {
   display: flex;
   align-items: center;
-  gap: var(--space-md);
+  gap: var(--space-xs);
   list-style: none;
 }
 
 .navbar-nav a {
   color: var(--text-secondary);
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 500;
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
+  white-space: nowrap;
 }
 
 .navbar-nav a:hover {

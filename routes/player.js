@@ -12,12 +12,21 @@ router.get('/', (req, res) => {
   if (req.session.user && req.session.user.role === 'admin') {
     return res.redirect('/admin/dashboard');
   }
-  res.render('player/home', { title: 'CodeRealm: The OOP Chronicles' });
+  res.render('player/home', { title: 'CodeRealm: Python Classes and Objects' });
 });
 
-// Slide 19: Physical Component Download
+// Slide 23: Download Physical Components
 router.get('/download', requireLogin, (req, res) => {
-  res.render('player/download', { title: 'Physical Components - CodeRealm' });
+  let components = { mapImage: "/images/coderealm_map.png", qrCards: [] };
+  try {
+    const componentsPath = path.join(__dirname, '../data/components.json');
+    if (fs.existsSync(componentsPath)) {
+      components = JSON.parse(fs.readFileSync(componentsPath, 'utf8'));
+    }
+  } catch (err) {
+    console.error('Error reading components.json:', err);
+  }
+  res.render('player/download', { title: 'Physical Components - CodeRealm', components });
 });
 
 // Slide 20: Rules
@@ -38,7 +47,7 @@ router.get('/rules', (req, res) => {
 router.get('/leaderboard', async (req, res) => {
   try {
     const [leaders] = await pool.query(`
-      SELECT u.username, COALESCE(SUM(c.score), 0) as total_score 
+      SELECT u.username, COALESCE(MAX(c.score), 0) as total_score 
       FROM User u 
       LEFT JOIN \`Character\` c ON u.userid = c.userid 
       WHERE u.role = 'player' 

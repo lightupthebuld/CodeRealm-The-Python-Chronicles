@@ -94,10 +94,11 @@
             });
             const result = await response.json();
             
-            // Server already broadcasts to all players via io
-            // Just redirect back with result info for own gamelog
-            const params = `?result=${result.correct ? 'correct' : 'wrong'}&points=${result.points}&msg=${encodeURIComponent(result.eventMessage)}`;
-            window.location.href = `/game/play/${roomCode}${params}`;
+            // Store review data in session storage to display on the next page
+            sessionStorage.setItem('reviewData_' + roomCode, JSON.stringify(result));
+            
+            // Redirect to review page instead of play
+            window.location.href = `/game/review/${roomCode}`;
 
         } catch (err) {
             console.error('Submission failed', err);
