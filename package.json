@@ -1,7 +1,7 @@
 {
   "name": "coderealm",
   "version": "1.0.0",
-  "description": "CodeRealm: The OOP Chronicles - Educational Hybrid Game",
+  "description": "CodeRealm: Python Classes and Objects - Educational Hybrid Game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -17,7 +17,6 @@
     "express-session": "^1.19.0",
     "express-validator": "^7.3.2",
     "mysql2": "^3.22.3",
-    "qrcode": "^1.5.4",
     "socket.io": "^4.8.3"
   }
 }

@@ -1,80 +1,167 @@
 <%- include('../partials/header', { title: title, extraCSS: ['player.css'] }) %>
-<!-- Load HTML5-QRCode Library -->
-<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-<%- include('../partials/navbar') %>
+    <!-- Load HTML5-QRCode Library -->
+    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+    <%- include('../partials/navbar') %>
 
-<main class="main-content">
-    <div class="container">
-        <div class="page-header">
-            <a href="/game/play/<%= roomCode %>" class="btn-back" id="btn-back">← Back</a>
-            <h1>📷 Scan QR</h1>
-        </div>
+        <main class="main-content">
+            <div class="container">
+                <div class="page-header">
+                    <a href="/game/play/<%= roomCode %>" class="btn-back" id="btn-back">← Back</a>
+                    <h1>📷 Scan QR</h1>
+                </div>
 
-        <div class="join-room-card animate-slide-up">
-            <form action="/game/scan/<%= roomCode %>" method="POST" id="scan-form">
-                <div class="form-group">
-                    <label for="event-code" class="form-label">Question / Event Code</label>
-                    <div class="join-input-row">
-                        <input type="text" class="form-control" id="event-code" name="eventcode" placeholder="Enter code manually" style="text-transform: uppercase; letter-spacing: 0.1em;" required>
-                        <button type="submit" class="btn btn-primary" id="btn-confirm">Confirm</button>
+                <div class="join-room-card animate-slide-up">
+                    <form action="/game/scan/<%= roomCode %>" method="POST" id="scan-form">
+                        <div class="form-group">
+                            <label for="event-code" class="form-label">Question / Event Code</label>
+                            <div class="join-input-row">
+                                <input type="text" class="form-control" id="event-code" name="eventcode"
+                                    placeholder="Enter code manually"
+                                    style="text-transform: uppercase; letter-spacing: 0.1em;" required>
+                                <button type="submit" class="btn btn-primary" id="btn-confirm">Confirm</button>
+                            </div>
+                        </div>
+                    </form>
+
+                    <div class="camera-area" id="camera-area"
+                        style="position: relative; min-height: 250px; display: flex; justify-content: center; align-items: center; background-color: var(--bg-surface); border: 4px dashed var(--primary-color); border-radius: var(--radius-md); box-shadow: 0 0 15px rgba(26, 115, 232, 0.3);">
+                        <div id="camera-overlay"
+                            style="position: absolute; text-align: center; color: var(--primary-color); z-index: 1;">
+                            <span style="font-size: 3rem;">📷</span>
+                            <p style="margin-top: 10px; font-weight: bold;">Camera Off</p>
+                        </div>
+                        <div id="reader" style="width: 100%; z-index: 2;"></div>
+                    </div>
+
+                    <div id="scan-status" style="margin-top: 10px; text-align: center; font-weight: 600; font-size: 0.95rem; color: var(--primary-color); display: none; padding: 8px; border-radius: 4px; background: rgba(26, 115, 232, 0.1);">
+                        ⏳ Initializing camera...
+                    </div>
+
+                    <div style="text-align: right; margin-top: var(--space-md);">
+                        <button class="btn btn-secondary" id="btn-open-camera">📸 Open Camera</button>
+                        <button class="btn btn-outline" id="btn-stop-camera" style="display: none;">🛑 Stop
+                            Camera</button>
                     </div>
                 </div>
-            </form>
-
-            <div class="camera-area" id="camera-area" style="position: relative; min-height: 250px; display: flex; justify-content: center; align-items: center; background-color: var(--bg-surface); border: 4px dashed var(--primary-color); border-radius: var(--radius-md); box-shadow: 0 0 15px rgba(26, 115, 232, 0.3);">
-                <div id="camera-overlay" style="position: absolute; text-align: center; color: var(--primary-color);">
-                    <span style="font-size: 3rem;">📷</span>
-                    <p style="margin-top: 10px; font-weight: bold;">Camera Off</p>
-                </div>
-                <div id="reader" style="width: 100%; z-index: 2;"></div>
             </div>
+        </main>
 
-            <div style="text-align: right; margin-top: var(--space-md);">
-                <button class="btn btn-secondary" id="btn-open-camera">📸 Open Camera</button>
-                <button class="btn btn-outline" id="btn-stop-camera" style="display: none;">🛑 Stop Camera</button>
-            </div>
-        </div>
-    </div>
-</main>
+        <script>
+            function extractEventCode(text) {
+                text = text.trim();
+                // 1. Check if it's a URL
+                try {
+                    if (text.startsWith('http://') || text.startsWith('https://')) {
+                        const url = new URL(text);
+                        // Try query parameter 'eventcode' or 'event'
+                        const code = url.searchParams.get('eventcode') || url.searchParams.get('event');
+                        if (code) return code.toUpperCase();
 
-<script>
-    let html5QrCode;
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    
-    document.getElementById('btn-open-camera').addEventListener('click', () => {
-        document.getElementById('btn-open-camera').style.display = 'none';
-        document.getElementById('btn-stop-camera').style.display = 'inline-block';
-        document.getElementById('camera-overlay').style.display = 'none';
-        
-        html5QrCode = new Html5Qrcode("reader");
-        html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            (decodedText, decodedResult) => {
-                // On Success
-                document.getElementById('event-code').value = decodedText;
-                html5QrCode.stop().then(() => {
-                    document.getElementById('scan-form').submit();
-                });
-            },
-            (errorMessage) => {
-                // On Error (ignore continuous scan errors)
+                        // Or look at the last pathname segment (e.g. /game/scan/ABCDEF/TILE-BOSS)
+                        const parts = url.pathname.split('/');
+                        const lastPart = parts[parts.length - 1];
+                        if (lastPart && (lastPart.startsWith('TILE-') || lastPart.includes('TILE'))) {
+                            return lastPart.toUpperCase();
+                        }
+                    }
+                } catch (e) {
+                    console.error("Error parsing URL:", e);
+                }
+
+                // 2. Fallback to just uppercase clean
+                return text.toUpperCase();
             }
-        ).catch((err) => {
-            console.error("Error starting camera", err);
-            alert("Failed to access camera. Please check your browser permissions.");
-        });
-    });
 
-    document.getElementById('btn-stop-camera').addEventListener('click', () => {
-        if(html5QrCode) {
-            html5QrCode.stop().then(() => {
-                document.getElementById('btn-open-camera').style.display = 'inline-block';
-                document.getElementById('btn-stop-camera').style.display = 'none';
-                document.getElementById('camera-overlay').style.display = 'block';
+            let html5QrCode;
+            
+            // Dynamic qrbox config: scales to fit split screen windows or mobile viewport
+            const config = { 
+                fps: 30, // Increased FPS for much faster scanning
+                qrbox: function(viewfinderWidth, viewfinderHeight) {
+                    const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+                    const size = Math.floor(minEdge * 0.75); // 75% of viewport
+                    return { width: size, height: size };
+                }
+            };
+
+            document.getElementById('btn-open-camera').addEventListener('click', () => {
+                const statusDiv = document.getElementById('scan-status');
+                statusDiv.style.display = 'block';
+                statusDiv.style.background = 'rgba(26, 115, 232, 0.1)';
+                statusDiv.style.color = 'var(--primary-color)';
+                statusDiv.textContent = '⏳ Accessing camera permissions...';
+
+                document.getElementById('btn-open-camera').style.display = 'none';
+                document.getElementById('btn-stop-camera').style.display = 'inline-block';
+                document.getElementById('camera-overlay').style.display = 'none';
+
+                try {
+                    html5QrCode = new Html5Qrcode("reader");
+                    html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        (decodedText, decodedResult) => {
+                            // Flash screen green on success
+                            document.body.style.transition = 'background-color 0.15s ease-in-out';
+                            document.body.style.backgroundColor = 'var(--success-color)';
+                            
+                            const parsedEvent = extractEventCode(decodedText);
+                            document.getElementById('event-code').value = parsedEvent;
+                            
+                            statusDiv.style.background = 'rgba(40, 167, 69, 0.1)';
+                            statusDiv.style.color = 'var(--success-color)';
+                            statusDiv.innerHTML = `✅ <strong>QR Code detected!</strong> Code: <code>${parsedEvent}</code>. Submitting event...`;
+                            
+                            setTimeout(() => {
+                                document.body.style.backgroundColor = '';
+                            }, 250);
+
+                            html5QrCode.stop().then(() => {
+                                document.getElementById('scan-form').submit();
+                            }).catch((err) => {
+                                console.warn("Camera stop error, submitting anyway:", err);
+                                document.getElementById('scan-form').submit();
+                            });
+                        },
+                        (errorMessage) => {
+                            // Silence normal scanning ticks
+                        }
+                    ).then(() => {
+                        statusDiv.textContent = '📷 Camera active. Align the tile QR Code inside the box.';
+                    }).catch((err) => {
+                        console.error("Error starting camera", err);
+                        statusDiv.style.background = 'rgba(220, 53, 69, 0.1)';
+                        statusDiv.style.color = 'var(--danger-color)';
+                        statusDiv.textContent = '❌ Failed to start camera.';
+                        
+                        document.getElementById('btn-open-camera').style.display = 'inline-block';
+                        document.getElementById('btn-stop-camera').style.display = 'none';
+                        document.getElementById('camera-overlay').style.display = 'block';
+                        alert("Failed to access camera. Please check browser permissions, or verify if another window is already using the webcam.");
+                    });
+                } catch (e) {
+                    console.error("Constructor error", e);
+                    statusDiv.textContent = '❌ Scanner initialization failed.';
+                }
             });
-        }
-    });
-</script>
 
-<%- include('../partials/footer', { extraJS: [] }) %>
+            document.getElementById('btn-stop-camera').addEventListener('click', () => {
+                const statusDiv = document.getElementById('scan-status');
+                if (html5QrCode) {
+                    html5QrCode.stop().then(() => {
+                        document.getElementById('btn-open-camera').style.display = 'inline-block';
+                        document.getElementById('btn-stop-camera').style.display = 'none';
+                        document.getElementById('camera-overlay').style.display = 'block';
+                        statusDiv.style.display = 'none';
+                    }).catch(err => {
+                        console.error(err);
+                        document.getElementById('btn-open-camera').style.display = 'inline-block';
+                        document.getElementById('btn-stop-camera').style.display = 'none';
+                        document.getElementById('camera-overlay').style.display = 'block';
+                        statusDiv.style.display = 'none';
+                    });
+                }
+            });
+        </script>
+
+        <%- include('../partials/footer', { extraJS: [] }) %>

@@ -1,15 +1,20 @@
-CodeRealm: The OOP Chronicles - Game Rules
+CodeRealm: Python Classes and Objects - Game Rules
 
 1. SETUP
    - Each player creates an account and joins a game room.
-   - The physical board game is set up with the map and QR cards.
-   - Each player starts with 100 HP, 100 SAN, and base skill values.
+   - Download the physical board game map and QR cards from the Download section.
+   - Each player starts with 5 Hearts (HP).
 
 2. GAMEPLAY
-   - Players take turns rolling a physical die to move on the board.
-   - When landing on an event space, scan the QR card to trigger an event.
-   - The web app will display an OOP question related to the event.
-   - Answer correctly to gain a skill bonus for the dice check.
-   - The web app rolls a D100 and compares against your skill value.
+   - Players take turns rolling the Digital Dice (1-12) on the web app to move their piece on the physical board.
+   - Once the dice is rolled, check which tile you land on and click "Scan QR" to scan the corresponding QR card.
+   - The web app will trigger an event (NORMAL, MONSTER, HEAL, TREASURE, or TRAP) and display a Python Classes and Objects question.
+   - Answer correctly to gain points!
+   - Answer incorrectly, and you lose 1 Heart.
+   - If your Hearts reach 0, you are eliminated and enter Spectating Mode.
 
-Good Luck!
+3. WINNING
+   - The game ends when only 1 player is left standing (or if all players are eliminated).
+   - Your final rank is determined by your total points.
+
+Good Luck, Code Walker!

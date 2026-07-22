@@ -1,4 +1,4 @@
--- CodeRealm: The OOP Chronicles
+-- CodeRealm: Python Classes and Objects
 -- Database Schema
 
 CREATE DATABASE IF NOT EXISTS coderealm;

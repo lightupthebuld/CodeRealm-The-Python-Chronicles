@@ -4,20 +4,30 @@ const rooms = {};
 
 module.exports = function (io) {
   io.on('connection', (socket) => {
+    const user = socket.request.session && socket.request.session.user;
+    if (!user) {
+      socket.disconnect(true);
+      return;
+    }
+    socket.user = user;
     console.log(`Socket connected: ${socket.id}`);
 
     // Join a game room
     socket.on('join-room', (data) => {
       // For lobby data could be { roomCode, username, isHost }
       const roomCode = data.roomCode || data;
-      const username = data.username || 'Anonymous';
-      const isHost = data.isHost || false;
+      const username = socket.user.username;
+      const isHost = data.isHost === true;
       
       socket.join(roomCode);
       
       // Initialize room if it doesn't exist
       if (!rooms[roomCode]) {
-        rooms[roomCode] = { players: [], currentTurnIndex: 0, boss: { hp: 100 } };
+        if (!isHost) {
+          socket.emit('room-error', 'This room does not exist. Ask the host to create it first.');
+          return;
+        }
+        rooms[roomCode] = { players: [], currentTurnIndex: null, boss: { hp: 100 }, status: 'lobby', activeQuestion: null };
       }
       
       // Store user info in the socket for disconnect handling
@@ -27,9 +37,16 @@ module.exports = function (io) {
       // Add player to the room tracking (avoid duplicates if they reconnect)
       const existingPlayer = rooms[roomCode].players.find(p => p.username === username);
       if (!existingPlayer) {
-        rooms[roomCode].players.push({ id: socket.id, username, isReady: isHost, isHost, score: 0, hp: 100 });
+        rooms[roomCode].players.push({ id: socket.id, username, isReady: isHost, isHost, score: 0, hp: 5, connected: true });
       } else {
         existingPlayer.id = socket.id; // Update socket id
+        existingPlayer.connected = true;
+      }
+      
+      // Clear any pending deletion timeouts for this room
+      if (rooms[roomCode].deleteTimeout) {
+          clearTimeout(rooms[roomCode].deleteTimeout);
+          rooms[roomCode].deleteTimeout = null;
       }
       
       console.log(`Socket ${socket.id} (${username}) joined room ${roomCode}`);
@@ -41,7 +58,7 @@ module.exports = function (io) {
     // Player ready
     socket.on('player-ready', (data) => {
       const roomCode = data.roomCode;
-      const username = data.username;
+      const username = socket.user.username;
       
       if (rooms[roomCode]) {
         const player = rooms[roomCode].players.find(p => p.username === username);
@@ -55,7 +72,7 @@ module.exports = function (io) {
     // Player cancel ready
     socket.on('player-unready', (data) => {
       const roomCode = data.roomCode;
-      const username = data.username;
+      const username = socket.user.username;
       
       if (rooms[roomCode]) {
         const player = rooms[roomCode].players.find(p => p.username === username);
@@ -69,7 +86,14 @@ module.exports = function (io) {
     // Game start
     socket.on('game-start', (data) => {
       if (rooms[data.roomCode]) {
-        rooms[data.roomCode].currentTurnIndex = 0; // Initialize turn
+        const room = rooms[data.roomCode];
+        const player = room.players.find(p => p.username === socket.user.username);
+        if (!player || !player.isHost || room.players.length < 2 || !room.players.every(p => p.isReady)) {
+          socket.emit('room-error', 'Only the host can start a game after at least two ready players have joined.');
+          return;
+        }
+        room.status = 'playing';
+        room.currentTurnIndex = Math.floor(Math.random() * room.players.length);
         io.to(data.roomCode).emit('game-start', data);
       }
     });
@@ -89,8 +113,17 @@ module.exports = function (io) {
     socket.on('turn-update', (data) => {
       if (rooms[data.roomCode] && data.action === 'end_turn') {
         const room = rooms[data.roomCode];
-        // Cycle turn
-        room.currentTurnIndex = (room.currentTurnIndex + 1) % room.players.length;
+        const playerCount = room.players.length;
+        
+        // Cycle turn, skipping dead players
+        let nextIndex = (room.currentTurnIndex + 1) % playerCount;
+        let checked = 0;
+        while (checked < playerCount) {
+          if (room.players[nextIndex].hp > 0) break;
+          nextIndex = (nextIndex + 1) % playerCount;
+          checked++;
+        }
+        room.currentTurnIndex = nextIndex;
         
         io.to(data.roomCode).emit('turn-update', {
           ...data,
@@ -135,28 +168,75 @@ module.exports = function (io) {
       io.to(data.roomCode).emit('game-over', data);
     });
 
+    // Explicit leave room (when clicking Leave Game)
+    socket.on('leave-room', (data) => {
+      const roomCode = data.roomCode;
+      const username = data.username;
+      
+      if (rooms[roomCode]) {
+        const player = rooms[roomCode].players.find(p => p.username === username);
+        const wasHost = player ? player.isHost : false;
+        
+        rooms[roomCode].players = rooms[roomCode].players.filter(p => p.username !== username);
+        
+        if (rooms[roomCode].players.length === 0) {
+          delete rooms[roomCode];
+        } else {
+          if (wasHost) {
+            rooms[roomCode].players[0].isHost = true;
+            rooms[roomCode].players[0].isReady = true;
+          }
+          io.to(roomCode).emit('update-player-list', rooms[roomCode].players);
+          
+          if (rooms[roomCode].currentTurnIndex !== undefined) {
+             io.to(roomCode).emit('game-state-sync', {
+                players: rooms[roomCode].players,
+                currentTurnIndex: rooms[roomCode].currentTurnIndex,
+                boss: rooms[roomCode].boss
+             });
+          }
+        }
+      }
+    });
+
     socket.on('disconnect', () => {
       console.log(`Socket disconnected: ${socket.id}`);
       
       if (socket.roomCode && rooms[socket.roomCode]) {
-        // Find if the disconnecting player was the host
-        const disconnectedPlayer = rooms[socket.roomCode].players.find(p => p.id === socket.id);
-        const wasHost = disconnectedPlayer ? disconnectedPlayer.isHost : false;
+        const roomCode = socket.roomCode;
+        const player = rooms[roomCode].players.find(p => p.id === socket.id);
+        if (player) {
+          player.connected = false;
+        }
 
-        // Remove the player from the room tracking
-        rooms[socket.roomCode].players = rooms[socket.roomCode].players.filter(p => p.id !== socket.id);
-        
-        if (rooms[socket.roomCode].players.length === 0) {
-          // Clean up empty rooms
-          delete rooms[socket.roomCode];
-        } else {
-          // Host migration
-          if (wasHost) {
-            rooms[socket.roomCode].players[0].isHost = true;
-            rooms[socket.roomCode].players[0].isReady = true; // Auto ready the new host
+        if (rooms[roomCode].status === 'lobby') {
+          // In Lobby: Remove player immediately
+          const wasHost = player ? player.isHost : false;
+          rooms[roomCode].players = rooms[roomCode].players.filter(p => p.id !== socket.id);
+          
+          if (rooms[roomCode].players.length === 0) {
+            delete rooms[roomCode];
+          } else {
+            if (wasHost) {
+              rooms[roomCode].players[0].isHost = true;
+              rooms[roomCode].players[0].isReady = true;
+            }
+            io.to(roomCode).emit('update-player-list', rooms[roomCode].players);
           }
-          // Broadcast the updated list
-          io.to(socket.roomCode).emit('update-player-list', rooms[socket.roomCode].players);
+        } else {
+          // In Game: Keep player in room, clean up if empty for 5 minutes
+          if (rooms[roomCode].deleteTimeout) {
+              clearTimeout(rooms[roomCode].deleteTimeout);
+          }
+          rooms[roomCode].deleteTimeout = setTimeout(() => {
+            if (rooms[roomCode]) {
+              const anyConnected = rooms[roomCode].players.some(p => p.connected !== false);
+              if (!anyConnected) {
+                console.log(`Room ${roomCode} empty for 5 minutes, deleting.`);
+                delete rooms[roomCode];
+              }
+            }
+          }, 5 * 60 * 1000);
         }
       }
     });

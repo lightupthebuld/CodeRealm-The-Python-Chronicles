@@ -30,13 +30,9 @@
 
                         <div class="form-row" style="margin-top: var(--space-lg);">
                             <div class="form-group">
-                                <label for="concept" class="form-label">Concept</label>
-                                <select class="form-control" id="concept" name="concept">
-                                    <option value="if_else">If/Else Statements (Decision Path)</option>
-                                    <option value="loops">Loops - For/While (Endless Cycle)</option>
-                                    <option value="switch">Switch/Case (Multiple Choices)</option>
-                                    <option value="exceptions">Exception Handling (Error Trap)</option>
-                                </select>
+                                <label class="form-label">Python Concept</label>
+                                <input type="text" class="form-control" value="Classes and Objects" readonly>
+                                <input type="hidden" name="concept" value="classes_objects">
                             </div>
                             <div class="form-group">
                                 <label for="difficulty" class="form-label">Difficulty</label>
@@ -56,7 +52,7 @@
                                     <input type="text" class="form-control" id="option-a" name="option_a"
                                         placeholder="Option A" required>
                                     <div class="correct-indicator">
-                                        <input type="radio" name="correct" value="A" id="correct-a"> <label
+                                        <input type="radio" name="correct" value="A" id="correct-a" required> <label
                                             for="correct-a"
                                             style="font-size:0.8rem; color:var(--text-muted);">Correct</label>
                                     </div>
