@@ -9,7 +9,7 @@
 
         <div class="result-card animate-slide-up">
             <div class="result-icon">🏆</div>
-            <h2 style="color: var(--accent-light);">Game Over!</h2>
+            <h2 id="result-title" style="color: var(--accent-light);">Game Over!</h2>
             <p>The adventure has ended. Here are the final standings:</p>
             <div style="margin-top: var(--space-xl); width: 100%;">
                 <table class="data-table" style="font-size: 0.9rem;">
@@ -36,6 +36,12 @@
         
         if (gameOverDataStr) {
             const data = JSON.parse(gameOverDataStr);
+            const resultTitle = document.getElementById('result-title');
+            const currentUsername = '<%= user ? user.username : "" %>';
+            if (data.winner === currentUsername) {
+                resultTitle.textContent = 'You Win!';
+                resultTitle.style.color = 'var(--success-color)';
+            }
             const reasonEl = document.createElement('h3');
             reasonEl.style.color = 'var(--primary-color)';
             reasonEl.style.marginBottom = 'var(--space-md)';

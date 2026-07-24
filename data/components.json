@@ -2,22 +2,52 @@
     "mapImage": "/images/coderealm_map.png",
     "qrCards": [
         {
-            "id": "event_random",
-            "title": "🎭 Random Event",
-            "data": "TILE-EVENT",
-            "description": "Randomly triggers: Heal, Monster, Treasure, or Trap"
+            "id": "start",
+            "title": "Start",
+            "data": "TILE-START",
+            "description": "+5 Score and +1 Heart. No question."
         },
         {
-            "id": "event_monster",
-            "title": "⚔️ Monster Encounter",
+            "id": "normal",
+            "title": "Normal",
+            "data": "TILE-NORMAL",
+            "description": "Nothing happens. No question."
+        },
+        {
+            "id": "monster",
+            "title": "Monster",
             "data": "TILE-MONSTER",
             "description": "Correct: +10 Score | Wrong: -1 Heart"
         },
         {
-            "id": "event_normal",
-            "title": "❓ Normal Question",
-            "data": "TILE-NORMAL",
-            "description": "Correct: +10 Score | Wrong: -1 Heart"
+            "id": "treasure",
+            "title": "Treasure",
+            "data": "TILE-TREASURE",
+            "description": "Correct: +20 Score | Wrong: -1 Heart"
+        },
+        {
+            "id": "trap",
+            "title": "Trap",
+            "data": "TILE-TRAP",
+            "description": "Correct: +5 Score | Wrong: -1 Heart and -10 Score"
+        },
+        {
+            "id": "heal",
+            "title": "Heal",
+            "data": "TILE-HEAL",
+            "description": "Correct: +1 Heart | Wrong: nothing happens"
+        },
+        {
+            "id": "event",
+            "title": "Random Event",
+            "data": "TILE-EVENT",
+            "description": "Randomly becomes Monster, Treasure, Trap, or Heal"
+        },
+        {
+            "id": "rest",
+            "title": "Rest",
+            "data": "TILE-REST",
+            "description": "+1 Heart. No question."
         }
     ]
 }

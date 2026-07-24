@@ -1,4 +1,4 @@
-CodeRealm: Python Classes and Objects - Game Rules
+CodeRealm: The Python Chronicles - Game Rules
 
 1. SETUP
    - Each player creates an account and joins a game room.
@@ -8,10 +8,13 @@ CodeRealm: Python Classes and Objects - Game Rules
 2. GAMEPLAY
    - Players take turns rolling the Digital Dice (1-12) on the web app to move their piece on the physical board.
    - Once the dice is rolled, check which tile you land on and click "Scan QR" to scan the corresponding QR card.
-   - The web app will trigger an event (NORMAL, MONSTER, HEAL, TREASURE, or TRAP) and display a Python Classes and Objects question.
-   - Answer correctly to gain points!
-   - Answer incorrectly, and you lose 1 Heart.
-   - If your Hearts reach 0, you are eliminated and enter Spectating Mode.
+   - Start gives +5 Score and +1 Heart. Normal does nothing. Rest gives +1 Heart. These tiles do not ask a question.
+   - Monster: correct +10 Score; wrong -1 Heart.
+   - Treasure: correct +20 Score; wrong -1 Heart.
+   - Trap: correct +5 Score; wrong -1 Heart and -10 Score.
+   - Heal: correct +1 Heart; wrong has no effect.
+   - Event randomly becomes Monster, Treasure, Trap, or Heal.
+   - If a player reaches 0 Hearts, the game ends immediately and the final result is shown.
 
 3. WINNING
    - The game ends when only 1 player is left standing (or if all players are eliminated).

@@ -4,6 +4,34 @@ const { requireLogin } = require('../middleware/auth');
 const { pool } = require('../database/db');
 const { rooms } = require('../socket/gameSocket');
 
+async function updateGlobalScore(userId, scoreChange) {
+  if (scoreChange === 0) return;
+  const [roomRows] = await pool.query('SELECT roomid FROM GameRoom WHERE roomcode = ? LIMIT 1', ['GLOBAL']);
+  let roomId = roomRows[0] && roomRows[0].roomid;
+  if (!roomId) {
+    const [newRoom] = await pool.query('INSERT INTO GameRoom (roomname, roomcode, hostid) VALUES (?, ?, ?)', ['Global Leaderboard', 'GLOBAL', userId]);
+    roomId = newRoom.insertId;
+  }
+  const [characters] = await pool.query('SELECT characterid FROM `Character` WHERE userid = ? LIMIT 1', [userId]);
+  if (characters.length > 0) {
+    await pool.query('UPDATE `Character` SET score = GREATEST(0, score + ?) WHERE characterid = ?', [scoreChange, characters[0].characterid]);
+  } else {
+    await pool.query('INSERT INTO `Character` (userid, roomid, score) VALUES (?, ?, ?)', [userId, roomId, Math.max(0, scoreChange)]);
+  }
+}
+
+function advanceToNextAlivePlayer(room) {
+  const playerCount = room.players.length;
+  if (playerCount === 0) return;
+  let nextIndex = (room.currentTurnIndex + 1) % playerCount;
+  let checked = 0;
+  while (checked < playerCount && room.players[nextIndex].hp <= 0) {
+    nextIndex = (nextIndex + 1) % playerCount;
+    checked++;
+  }
+  room.currentTurnIndex = nextIndex;
+}
+
 // Slide 11: Create Room → Lobby (host view)
 router.get('/create', requireLogin, (req, res) => {
   // Generate random 6-character alphanumeric room code
@@ -42,12 +70,11 @@ router.post('/scan/:code', requireLogin, async (req, res) => {
       return res.redirect(`/game/play/${req.params.code}`);
     }
     let query = 'SELECT questionid FROM Question';
-    let params = [];
     
     // Determine tile type from QR Code
-    let tileType = 'NORMAL'; // Default
-    if (eventcode.startsWith('TILE-')) {
-      tileType = eventcode.split('-')[1]; // e.g. NORMAL, MONSTER, TREASURE, BOSS, EVENT
+    let tileType = 'NORMAL';
+    if (typeof eventcode === 'string' && eventcode.toUpperCase().startsWith('TILE-')) {
+      tileType = eventcode.toUpperCase().split('-')[1];
     } else if (eventcode === 'EVENT') {
       tileType = 'EVENT';
     }
@@ -57,11 +84,36 @@ router.post('/scan/:code', requireLogin, async (req, res) => {
       const eventTypes = ['HEAL', 'MONSTER', 'TREASURE', 'TRAP'];
       tileType = eventTypes[Math.floor(Math.random() * eventTypes.length)];
     }
+
+    const noQuestionEvents = {
+      START: { scoreChange: 5, hpChange: 1, message: 'Start bonus: +5 Score and +1 Heart!' },
+      NORMAL: { scoreChange: 0, hpChange: 0, message: 'Normal tile: nothing happens.' },
+      REST: { scoreChange: 0, hpChange: 1, message: 'Rest stop: +1 Heart!' }
+    };
+    if (noQuestionEvents[tileType]) {
+      const result = noQuestionEvents[tileType];
+      const player = room.players.find(item => item.username === req.session.user.username);
+      player.score = Math.max(0, player.score + result.scoreChange);
+      player.hp = Math.min(5, Math.max(0, player.hp + result.hpChange));
+      await updateGlobalScore(req.session.user.userid, result.scoreChange);
+      const io = req.app.get('io');
+      io.to(req.params.code).emit('event-triggered', { player: player.username, tileType });
+      io.to(req.params.code).emit('question-result', { player: player.username, points: result.scoreChange, correct: true, eventMessage: result.message });
+      advanceToNextAlivePlayer(room);
+      io.to(req.params.code).emit('turn-update', { roomCode: req.params.code, action: 'end_turn', player: player.username, autoEnded: true, currentTurnIndex: room.currentTurnIndex, players: room.players });
+      io.to(req.params.code).emit('game-state-sync', { players: room.players, currentTurnIndex: room.currentTurnIndex, boss: room.boss });
+      req.session.success = result.message;
+      return res.redirect(`/game/play/${req.params.code}`);
+    }
+    if (!['MONSTER', 'TREASURE', 'TRAP', 'HEAL'].includes(tileType)) {
+      req.session.error = 'Invalid QR event code.';
+      return res.redirect(`/game/play/${req.params.code}`);
+    }
     
     // Optional: no difficulty filtering as requested
     query += ' ORDER BY RAND() LIMIT 1';
     
-    const [rows] = await pool.query(query, params);
+    const [rows] = await pool.query(query);
     
     if (rows.length > 0) {
       room.activeQuestion = {
@@ -173,21 +225,19 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
     let eventMessage = "";
 
     if (isCorrect) {
-        if (tileType === 'NORMAL') { scoreChange = 10; eventMessage = "Correct! +10 Score"; }
-        else if (tileType === 'MONSTER') { scoreChange = 10; eventMessage = "Monster Defeated! +10 Score"; }
+        if (tileType === 'MONSTER') { scoreChange = 10; eventMessage = "Monster defeated! +10 Score"; }
         else if (tileType === 'TREASURE') { scoreChange = 20; eventMessage = "Treasure Found! +20 Score"; }
-        else if (tileType === 'BOSS') { scoreChange = 30; eventMessage = "Boss hit! +30 Score"; }
         else if (tileType === 'HEAL') { hpChange = 1; eventMessage = "Heal successful! +1 Heart"; }
         else if (tileType === 'TRAP') { scoreChange = 5; eventMessage = "Trap evaded! +5 Score"; }
     } else {
-        if (tileType === 'NORMAL' || tileType === 'MONSTER') { hpChange = -1; eventMessage = "Wrong! -1 Heart"; }
-        else if (tileType === 'BOSS') { hpChange = -1; eventMessage = "Boss attacks! -1 Heart"; }
-        else if (tileType === 'TREASURE') { eventMessage = "Wrong! Treasure lost."; }
+        if (tileType === 'MONSTER') { hpChange = -1; eventMessage = "Monster attack! -1 Heart"; }
+        else if (tileType === 'TREASURE') { hpChange = -1; eventMessage = "Treasure lost! -1 Heart"; }
         else if (tileType === 'HEAL') { eventMessage = "Heal failed! No Hearts gained."; }
-        else if (tileType === 'TRAP') { hpChange = -2; eventMessage = "Trap triggered! -2 Hearts"; }
+        else if (tileType === 'TRAP') { scoreChange = -10; hpChange = -1; eventMessage = "Trap triggered! -1 Heart and -10 Score"; }
     }
 
     // 3. Update in-memory room stats (Live Game State)
+    let gameOverData = null;
     if (rooms[roomCode]) {
         const player = rooms[roomCode].players.find(p => p.username === username);
         if (player) {
@@ -229,13 +279,15 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
                     alive: p.hp > 0
                 }));
             
-            io.to(roomCode).emit('game-over', {
+            gameOverData = {
                 roomCode: roomCode,
                 standings: finalStandings,
+                winner: alivePlayers.length === 1 ? alivePlayers[0].username : null,
                 reason: alivePlayers.length === 1 
                     ? `${alivePlayers[0].username} is the last one standing!`
                     : 'All players have been eliminated!'
-            });
+            };
+            io.to(roomCode).emit('game-over', gameOverData);
 
             // Broadcast final game state sync
             io.to(roomCode).emit('game-state-sync', {
@@ -279,21 +331,7 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
     }
 
     // 4. Save to Database for Global Leaderboard (Only Score matters here)
-    if (scoreChange > 0) {
-        const [room] = await pool.query('SELECT roomid FROM GameRoom LIMIT 1');
-        let roomId = room.length > 0 ? room[0].roomid : null;
-        if (!roomId) {
-            const [newRoom] = await pool.query('INSERT INTO GameRoom (roomname, roomcode, hostid) VALUES ("Global", "GLOBAL", ?)', [userId]);
-            roomId = newRoom.insertId;
-        }
-        
-        const [char] = await pool.query('SELECT characterid FROM `Character` WHERE userid = ? LIMIT 1', [userId]);
-        if (char.length > 0) {
-            await pool.query('UPDATE `Character` SET score = score + ? WHERE characterid = ?', [scoreChange, char[0].characterid]);
-        } else {
-            await pool.query('INSERT INTO `Character` (userid, roomid, score) VALUES (?, ?, ?)', [userId, roomId, scoreChange]);
-        }
-    }
+    await updateGlobalScore(userId, scoreChange);
 
     const didAnswer = !!answerid;
     res.json({ 
@@ -301,10 +339,12 @@ router.post('/submit-answer/:code', requireLogin, async (req, res) => {
         points: scoreChange, 
         hpChange: hpChange, 
         eventMessage: eventMessage,
+        player: username,
         questionText: questionText,
         correctAnswerText: didAnswer ? correctAnswerText : null,
         chosenAnswerText: didAnswer ? chosenAnswerText : 'Timeout / No Answer',
-        didAnswer: didAnswer
+        didAnswer: didAnswer,
+        gameOver: gameOverData
     });
   } catch (error) {
     console.error('Answer submission error:', error);

@@ -1,4 +1,4 @@
--- CodeRealm: Python Classes and Objects
+-- CodeRealm: The Python Chronicles
 -- Database Schema
 
 CREATE DATABASE IF NOT EXISTS coderealm;
@@ -41,7 +41,6 @@ CREATE TABLE IF NOT EXISTS `Character` (
     roomid INT NOT NULL,
     score INT DEFAULT 0,
     healthpoint INT DEFAULT 100,
-    sanity INT DEFAULT 100,
     class_mastery INT DEFAULT 60,
     constructor_power INT DEFAULT 50,
     inheritance_link INT DEFAULT 40,
@@ -110,7 +109,6 @@ CREATE TABLE IF NOT EXISTS PlayerResponse (
     result ENUM('critical_success', 'extreme_success', 'hard_success', 'success', 'failure', 'fumble') DEFAULT NULL,
     scorechange INT DEFAULT 0,
     hpchange INT DEFAULT 0,
-    sanchange INT DEFAULT 0,
     skillchange INT DEFAULT 0,
     answertime DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (characterid) REFERENCES `Character`(characterid) ON DELETE CASCADE,

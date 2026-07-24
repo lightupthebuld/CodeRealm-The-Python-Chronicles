@@ -234,12 +234,12 @@ router.get('/rules', requireAdmin, (req, res) => {
     if (fs.existsSync(rulesPath)) {
       rulesContent = fs.readFileSync(rulesPath, 'utf8');
     } else {
-      rulesContent = `CodeRealm: Python Classes and Objects - Game Rules
+      rulesContent = `CodeRealm: The Python Chronicles - Game Rules
 
 1. SETUP
    - Each player creates an account and joins a game room.
    - The physical board game is set up with the map and QR cards.
-   - Each player starts with 100 HP, 100 SAN, and base skill values.
+   - Each player starts with 5 Hearts (HP).
 
 2. GAMEPLAY
    - Players take turns rolling a physical die to move on the board.

@@ -1,4 +1,4 @@
-# CodeRealm: Python Classes and Objects
+# CodeRealm: The Python Chronicles
 
 CodeRealm is an educational hybrid board game for practising the Python **Classes and Objects** concept. Players use a physical board and QR cards with the web application to answer questions in real time.
 

@@ -1,7 +1,7 @@
 {
   "name": "coderealm",
   "version": "1.0.0",
-  "description": "CodeRealm: Python Classes and Objects - Educational Hybrid Game",
+  "description": "CodeRealm: The Python Chronicles - Educational Hybrid Game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
