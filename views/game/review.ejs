@@ -95,18 +95,16 @@
         btn.disabled = true;
         btn.textContent = 'Returning...';
         
-        // Read event message to pass to gamelog in URL
+        // Preserve the same event message for the player's game log after returning.
         const reviewDataStr = sessionStorage.getItem('reviewData_' + roomCode);
-        let params = '';
         if (reviewDataStr) {
-            const reviewData = JSON.parse(reviewDataStr);
-            params = `?result=${reviewData.correct ? 'correct' : 'wrong'}&points=${reviewData.points}&msg=${encodeURIComponent(reviewData.eventMessage)}`;
+            sessionStorage.setItem('pendingGameLog_' + roomCode, reviewDataStr);
         }
-        
+
         // Remove review data
         sessionStorage.removeItem('reviewData_' + roomCode);
         
-        window.location.href = `/game/play/${roomCode}${params}`;
+        window.location.href = `/game/play/${roomCode}`;
     });
 </script>
 

@@ -93,6 +93,11 @@
                 })
             });
             const result = await response.json();
+            if (result.gameOver) {
+                sessionStorage.setItem('gameOverData', JSON.stringify(result.gameOver));
+                window.location.href = `/game/gameover/${roomCode}`;
+                return;
+            }
             
             // Store review data in session storage to display on the next page
             sessionStorage.setItem('reviewData_' + roomCode, JSON.stringify(result));

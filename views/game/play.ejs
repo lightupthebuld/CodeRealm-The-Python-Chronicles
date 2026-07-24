@@ -57,8 +57,7 @@
 
             <!-- Row 5 Left: Action Buttons -->
             <div class="action-buttons" style="display: flex; flex-direction: column; gap: 10px;">
-                <a href="/game/scan/<%= roomCode %>" class="btn btn-primary" id="btn-scan-qr">📷 Scan QR</a>
-                <a href="/" class="btn btn-outline" id="btn-leave-bottom">🚪 Leave Game</a>
+                <a href="/game/scan/<%= roomCode %>" class="btn btn-primary" id="btn-scan-qr" style="width: 100%;">📷 Scan Board QR</a>
             </div>
             
             <!-- Row 5 Right: Event Display -->
@@ -87,11 +86,25 @@
         socket.emit('get-game-state', roomCode);
     });
 
+    // The answering player is on the review page while the Socket.IO result is broadcast.
+    // Restore that same broadcast message when the player returns to the game page.
+    const pendingGameLog = sessionStorage.getItem(`pendingGameLog_${roomCode}`);
+    if (pendingGameLog) {
+        const data = JSON.parse(pendingGameLog);
+        const gamelog = document.getElementById('gamelog-content');
+        const newLog = document.createElement('p');
+        newLog.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong>: ${data.correct ? '✅' : '❌'} ${data.player || myUsername} — ${data.eventMessage}`;
+        newLog.style.color = data.correct ? 'var(--success-color)' : 'var(--danger-color)';
+        gamelog.appendChild(newLog);
+        gamelog.scrollTop = gamelog.scrollHeight;
+        sessionStorage.removeItem(`pendingGameLog_${roomCode}`);
+    }
+
     // Check if we just came back from answering a question (URL params)
     const urlParams = new URLSearchParams(window.location.search);
     const ansResult = urlParams.get('result');
     const ansMsg = urlParams.get('msg');
-    if (ansResult) {
+    if (false && ansResult) {
         const gamelog = document.getElementById('gamelog-content');
         const newLog = document.createElement('p');
         
@@ -190,7 +203,7 @@
             const isDead = myPlayer && myPlayer.hp <= 0;
             
             if (isDead) {
-                turnDiv.innerHTML = `☠️ You are dead. Spectating...`;
+                turnDiv.innerHTML = `☠️ You are eliminated. The game result is loading...`;
                 turnDiv.style.background = 'var(--danger-color)';
                 turnDiv.style.color = 'white';
                 btnScan.style.pointerEvents = 'none';
@@ -286,7 +299,7 @@
     // Listen for event type broadcast (shows HEAL, TRAP, etc. on other player's screen)
     socket.on('event-triggered', (data) => {
         const eventDisplay = document.querySelector('#event-display span');
-        const eventIcons = { 'HEAL': '💚', 'MONSTER': '⚔️', 'TREASURE': '💎', 'TRAP': '🪤', 'NORMAL': '❓', 'BOSS': '👹' };
+        const eventIcons = { 'START': '🏁', 'NORMAL': '⬜', 'MONSTER': '⚔️', 'TREASURE': '💎', 'TRAP': '🪤', 'HEAL': '💚', 'EVENT': '🎲', 'REST': '🛖' };
         const icon = eventIcons[data.tileType] || '🎭';
         eventDisplay.innerHTML = `${icon} ${data.player} triggered: <strong>${data.tileType}</strong>`;
         eventDisplay.style.fontWeight = 'bold';
@@ -330,7 +343,7 @@
     });
 
     // Handle Leave Game
-    document.querySelectorAll('#btn-leave, #btn-leave-bottom').forEach(btn => {
+    document.querySelectorAll('#btn-leave').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm("Are you sure you want to leave the game?")) {

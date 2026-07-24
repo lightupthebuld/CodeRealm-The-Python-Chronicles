@@ -12,7 +12,7 @@ router.get('/', (req, res) => {
   if (req.session.user && req.session.user.role === 'admin') {
     return res.redirect('/admin/dashboard');
   }
-  res.render('player/home', { title: 'CodeRealm: Python Classes and Objects' });
+  res.render('player/home', { title: 'CodeRealm: The Python Chronicles' });
 });
 
 // Slide 23: Download Physical Components

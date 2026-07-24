@@ -57,7 +57,7 @@
                         const code = url.searchParams.get('eventcode') || url.searchParams.get('event');
                         if (code) return code.toUpperCase();
 
-                        // Or look at the last pathname segment (e.g. /game/scan/ABCDEF/TILE-BOSS)
+                        // Or look at the last pathname segment (e.g. /game/scan/ABCDEF/TILE-MONSTER)
                         const parts = url.pathname.split('/');
                         const lastPart = parts[parts.length - 1];
                         if (lastPart && (lastPart.startsWith('TILE-') || lastPart.includes('TILE'))) {
